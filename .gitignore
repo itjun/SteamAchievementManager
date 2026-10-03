@@ -389,3 +389,6 @@ FodyWeavers.xsd
 # JetBrains Rider
 .idea/
 *.sln.iml
+
+# ZCode agent workspace (local session artifacts)
+.zcode/
