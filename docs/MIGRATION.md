@@ -310,6 +310,20 @@ SAM.API 保留（多目标 net48;net8.0-windows，net48 目标暂无消费者，
 - 实测：已下载 → 6/155（嗜血印/黑魂3/Detroit/P5R/只狼/古墓丽影），未下载 → 149；
   刷新/手动添加后重扫（毫秒级）。
 
+### 侧栏稳定化与窗格头部修复（2026-10-04）
+
+- **分类恒显**：四个固定类型（游戏/试玩/Mod/杂项）无论数量恒在侧栏（0 也带计数显示），
+  消除"分类随刷新忽隐忽现"；"其他"仅在有未知类型数据时出现。
+- **窗格头部布局修复**：隐藏汉堡按钮后，TitleBar 左置的应用名/图标由
+  NavigationView.TitleBar 机制叠印到窗格顶部，与首个菜单项视觉混乱。修法：
+  TitleBar 清空（Title=""，无 Icon，仅右侧窗口按钮），窗格头部改由
+  `NavigationView.PaneHeader` 显式渲染 **logo 在前 + 应用名同行**（ImageIcon 22px
+  + TextBlock，Margin 16,12）——自带占位高度，菜单项自然下移。
+- 验证手段：UIA 文本元素坐标（标题 y≈15/h19、首项 y≈74、40px 节奏）+
+  像素文本带拓扑（%TEMP%\sam-topology.ps1，暗色主题换亮文本阈值）。
+  坑：截图必须先 `SetForegroundWindow`，否则捕获到遮挡/合成残影（Mica 尤甚，
+  曾得到整片 R=44 G=15 B=15 的伪截图）。
+
 ### 列表行标识信息层级重做（2026-10-04，frontend-design 评审）
 
 - **家庭共享状态章**（行内唯一强调色）：PeopleCommunity24 图标 + 12px SemiBold
