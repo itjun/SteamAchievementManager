@@ -26,6 +26,20 @@
                            OpenPaneLength="220"
                            PaneDisplayMode="Left">
 
+            <!-- 窗格头部：logo 在前 + 应用名同行（用户要求）；隐藏汉堡按钮后
+                 TitleBar 左置标题会与首个菜单项叠印，故标题由此处渲染，
+                 TitleBar 仅留右侧窗口按钮 -->
+            <ui:NavigationView.PaneHeader>
+                <StackPanel Orientation="Horizontal" Margin="16,12,16,14">
+                    <ui:ImageIcon Source="pack://application:,,,/Assets/SAM.ico"
+                                  Width="22" Height="22" VerticalAlignment="Center" />
+                    <TextBlock Text="Steam 成就管理器"
+                               Margin="10,0,0,0" FontSize="14" FontWeight="SemiBold"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                </StackPanel>
+            </ui:NavigationView.PaneHeader>
+
             <!-- 类型分类菜单项由代码生成（MainWindow.RebuildCategoryItems）：
                  根据库数据自动出现/消失，点击即筛选并导航回游戏库页。 -->
             <ui:NavigationView.FooterMenuItems>
@@ -39,13 +53,10 @@
 
         <!-- TitleBar 必须是窗口 Grid 的直接子元素才会渲染；NavigationView 通过
              TitleBar 绑定感知它并让内容下移（WPF-UI 4.x Gallery 同款结构）。 -->
+        <!-- TitleBar 仅承载右侧窗口按钮；logo 与应用名在 PaneHeader 渲染 -->
         <ui:TitleBar x:Name="TitleBar"
                      Grid.Row="0"
-                     Title="Steam 成就管理器"
-                     CloseWindowByDoubleClickOnIcon="True">
-            <ui:TitleBar.Icon>
-                <ui:ImageIcon Source="pack://application:,,,/Assets/SAM.ico" />
-            </ui:TitleBar.Icon>
+                     Title="">
         </ui:TitleBar>
 
         <!-- 底部状态栏 -->
