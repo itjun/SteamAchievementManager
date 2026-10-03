@@ -1,0 +1,65 @@
+<ui:FluentWindow x:Class="SAM.WpfApp.MainWindow"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                 xmlns:views="clr-namespace:SAM.WpfApp.Views.Pages"
+                 Title="Steam 成就管理器"
+                 Width="1100" Height="700" MinWidth="880" MinHeight="540"
+                 WindowStartupLocation="CenterScreen"
+                 ExtendsContentIntoTitleBar="True"
+                 WindowBackdropType="Mica"
+                 WindowCornerPreference="Default"
+                 FontFamily="Segoe UI Variable Display, Segoe UI">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <ui:NavigationView x:Name="RootNavigation"
+                           Grid.Row="0"
+                           TitleBar="{Binding ElementName=TitleBar, Mode=OneWay}"
+                           IsBackButtonVisible="Collapsed"
+                           IsPaneToggleVisible="False"
+                           IsPaneOpen="True"
+                           OpenPaneLength="220"
+                           PaneDisplayMode="Left">
+
+            <!-- 类型分类菜单项由代码生成（MainWindow.RebuildCategoryItems）：
+                 根据库数据自动出现/消失，点击即筛选并导航回游戏库页。 -->
+            <ui:NavigationView.FooterMenuItems>
+                <ui:NavigationViewItem Content="设置" TargetPageType="{x:Type views:SettingsPage}">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:SymbolIcon Symbol="Settings24" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+            </ui:NavigationView.FooterMenuItems>
+        </ui:NavigationView>
+
+        <!-- TitleBar 必须是窗口 Grid 的直接子元素才会渲染；NavigationView 通过
+             TitleBar 绑定感知它并让内容下移（WPF-UI 4.x Gallery 同款结构）。 -->
+        <ui:TitleBar x:Name="TitleBar"
+                     Grid.Row="0"
+                     Title="Steam 成就管理器"
+                     CloseWindowByDoubleClickOnIcon="True">
+            <ui:TitleBar.Icon>
+                <ui:ImageIcon Source="pack://application:,,,/Assets/SAM.ico" />
+            </ui:TitleBar.Icon>
+        </ui:TitleBar>
+
+        <!-- 底部状态栏 -->
+        <Border Grid.Row="1"
+                Height="28"
+                Background="{DynamicResource ApplicationBackgroundBrush}"
+                BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                BorderThickness="0,1,0,0">
+            <TextBlock Text="{Binding StatusText, FallbackValue=就绪}"
+                       Margin="14,0,12,0"
+                       VerticalAlignment="Center"
+                       FontSize="12"
+                       TextTrimming="CharacterEllipsis"
+                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+        </Border>
+    </Grid>
+</ui:FluentWindow>

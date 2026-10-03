@@ -1,0 +1,247 @@
+<UserControl x:Class="SAM.WpfApp.Views.Controls.GameDetailView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml">
+
+    <DockPanel>
+        <!-- 底部 Action Bar -->
+        <Border DockPanel.Dock="Bottom"
+                Height="56"
+                Background="{DynamicResource ApplicationBackgroundBrush}"
+                BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                BorderThickness="0,1,0,0">
+            <Grid Margin="24,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <ui:Button Grid.Column="0"
+                           Command="{Binding ResetAllCommand}"
+                           VerticalAlignment="Center"
+                           ToolTip="重置该游戏的统计（可选连同成就）">
+                    <StackPanel Orientation="Horizontal">
+                        <ui:SymbolIcon Symbol="History24" />
+                        <TextBlock Text="重置" Margin="6,0,0,0" />
+                    </StackPanel>
+                </ui:Button>
+
+                <TextBlock Grid.Column="1"
+                           VerticalAlignment="Center" HorizontalAlignment="Center"
+                           FontSize="12"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Text" Value="没有未保存的修改" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding HasChanges}" Value="True">
+                                    <Setter Property="Text" Value="{Binding ChangedCount, StringFormat=有 {0} 项未保存的修改}" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+
+                <ui:Button Grid.Column="2"
+                           Command="{Binding SaveCommand}"
+                           Appearance="Primary"
+                           MinWidth="120"
+                           VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal">
+                        <ui:SymbolIcon Symbol="Save24" />
+                        <TextBlock Text="保存更改" Margin="6,0,0,0" />
+                    </StackPanel>
+                </ui:Button>
+            </Grid>
+        </Border>
+
+        <!-- 顶部 -->
+        <StackPanel DockPanel.Dock="Top" Margin="24,12,24,4">
+            <StackPanel Orientation="Horizontal">
+                <ui:Button Command="{Binding GoBackCommand}" ToolTip="返回游戏库" VerticalAlignment="Center">
+                    <ui:SymbolIcon Symbol="ArrowLeft24" />
+                </ui:Button>
+                <TextBlock Text="{Binding GameName}"
+                           FontSize="24" FontWeight="SemiBold" Margin="14,0,0,0"
+                           VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                           Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                <TextBlock Text="{Binding AppIdText}"
+                           FontSize="12" Margin="12,6,0,0" VerticalAlignment="Center"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                <ui:Button Command="{Binding RefreshCommand}" ToolTip="重新读取"
+                           Margin="16,0,0,0" VerticalAlignment="Center">
+                    <ui:SymbolIcon Symbol="ArrowClockwise24" />
+                </ui:Button>
+            </StackPanel>
+
+            <!-- 第二行：分段切换 + 成就工具条 -->
+            <Grid Margin="0,12,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <RadioButton Content="成就" GroupName="DetailSection"
+                                 IsChecked="{Binding ShowAchievements}" MinWidth="72" />
+                    <RadioButton Content="统计" GroupName="DetailSection"
+                                 IsChecked="{Binding ShowStatistics}" MinWidth="72" Margin="4,0,0,0" />
+                </StackPanel>
+
+                <!-- 成就：搜索 + 批量 -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right"
+                            VerticalAlignment="Center"
+                            Visibility="{Binding ShowAchievements, Converter={StaticResource BoolToVisibilityConverter}}">
+                    <ui:TextBox Width="220" Margin="0,0,10,0"
+                                Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged, Delay=200}"
+                                PlaceholderText="搜索成就..."
+                                ClearButtonEnabled="True">
+                        <ui:TextBox.Icon>
+                            <ui:SymbolIcon Symbol="Search24" />
+                        </ui:TextBox.Icon>
+                    </ui:TextBox>
+                    <ui:Button Command="{Binding UnlockAllCommand}" ToolTip="解锁当前列表中全部成就" Margin="0,0,8,0">
+                        <ui:SymbolIcon Symbol="CheckmarkCircle24" />
+                    </ui:Button>
+                    <ui:Button Command="{Binding LockAllCommand}" ToolTip="锁定当前列表中全部成就" Margin="0,0,8,0">
+                        <ui:SymbolIcon Symbol="DismissCircle24" />
+                    </ui:Button>
+                    <ui:Button Command="{Binding InvertAllCommand}" ToolTip="反转当前列表成就状态">
+                        <ui:SymbolIcon Symbol="ArrowSwap24" />
+                    </ui:Button>
+                </StackPanel>
+
+                <!-- 统计：编辑开关 -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right"
+                            VerticalAlignment="Center"
+                            Visibility="{Binding ShowStatistics, Converter={StaticResource BoolToVisibilityConverter}}">
+                    <ui:ToggleSwitch Content="启用统计编辑（谨慎操作）"
+                                     IsChecked="{Binding StatsEditingEnabled, Mode=TwoWay}" />
+                </StackPanel>
+
+                <TextBlock Grid.Column="2" VerticalAlignment="Center" Margin="16,0,0,0" FontSize="12"
+                           Text="{Binding ProgressText}"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                           Visibility="{Binding ShowAchievements, Converter={StaticResource BoolToVisibilityConverter}}" />
+            </Grid>
+        </StackPanel>
+
+        <!-- 内容区 -->
+        <Grid Margin="0,4,0,0">
+
+            <!-- 成就列表 -->
+            <ListBox x:Name="AchievementList"
+                     ItemsSource="{Binding Achievements}"
+                     Background="Transparent" BorderThickness="0"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                     VirtualizingPanel.IsVirtualizing="True"
+                     VirtualizingPanel.VirtualizationMode="Recycling"
+                     Visibility="{Binding ShowAchievements, Converter={StaticResource BoolToVisibilityConverter}}">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Margin="12,4" MinHeight="76">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <Border Width="56" Height="56"
+                                    HorizontalAlignment="Left" VerticalAlignment="Center"
+                                    CornerRadius="4" Background="#33808080">
+                                <Image Source="{Binding Icon}" Stretch="Uniform" Margin="2" />
+                            </Border>
+
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="14,0,16,0">
+                                <TextBlock Text="{Binding DisplayName}"
+                                           FontSize="14" FontWeight="SemiBold"
+                                           TextTrimming="CharacterEllipsis"
+                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                                <TextBlock Text="{Binding DisplayDescription}"
+                                           FontSize="12" Margin="0,3,0,0"
+                                           TextTrimming="CharacterEllipsis"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                <TextBlock Text="{Binding UnlockText}"
+                                           FontSize="11" Margin="0,3,0,0"
+                                           Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding StateText}" FontSize="12" Margin="0,0,10,0"
+                                           VerticalAlignment="Center"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                <CheckBox IsChecked="{Binding PendingAchieved, Mode=TwoWay}"
+                                          IsEnabled="{Binding CanToggle}"
+                                          ToolTip="{Binding StateText}" />
+                            </StackPanel>
+                        </Grid>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+
+            <!-- 统计列表 -->
+            <DockPanel Visibility="{Binding ShowStatistics, Converter={StaticResource BoolToVisibilityConverter}}">
+                <Grid DockPanel.Dock="Top" Margin="24,4,24,6">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="280" />
+                        <ColumnDefinition Width="240" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="名称" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    <TextBlock Grid.Column="1" Text="值" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    <TextBlock Grid.Column="2" Text="附加" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                </Grid>
+
+                <ListBox ItemsSource="{Binding Statistics}"
+                         Background="Transparent" BorderThickness="0"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                         VirtualizingPanel.IsVirtualizing="True"
+                         VirtualizingPanel.VirtualizationMode="Recycling">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Margin="24,3">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="280" />
+                                    <ColumnDefinition Width="240" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+
+                                <TextBlock Text="{Binding DisplayName}"
+                                           FontSize="13" VerticalAlignment="Center"
+                                           TextTrimming="CharacterEllipsis"
+                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                           ToolTip="{Binding Id}" />
+
+                                <ui:TextBox Grid.Column="1"
+                                            Text="{Binding EditValue, UpdateSourceTrigger=PropertyChanged}"
+                                            IsEnabled="{Binding IsEditable}"
+                                            FontSize="13" Margin="0,0,8,0" />
+
+                                <TextBlock Grid.Column="2"
+                                           Text="{Binding Extra}" FontSize="12" VerticalAlignment="Center"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                           TextTrimming="CharacterEllipsis" />
+
+                                <TextBlock Grid.Row="1" Grid.Column="1"
+                                           Text="{Binding ErrorText}" FontSize="11" Margin="2,2,8,0"
+                                           Foreground="{DynamicResource SystemFillColorCautionBrush}"
+                                           Visibility="{Binding ErrorText, Converter={StaticResource NullToVisibilityConverter}}" />
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+
+            <!-- 加载中 -->
+            <ui:ProgressRing IsIndeterminate="True" Width="36" Height="36"
+                             HorizontalAlignment="Center" VerticalAlignment="Center"
+                             Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibilityConverter}}" />
+        </Grid>
+    </DockPanel>
+</UserControl>
