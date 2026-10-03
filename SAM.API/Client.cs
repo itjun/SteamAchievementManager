@@ -44,6 +44,16 @@ namespace SAM.API
 
         public void Initialize(long appId)
         {
+            var trace = Environment.GetEnvironmentVariable("SAM_TRACE_INIT") == "1";
+            void Step(string name)
+            {
+                if (trace == true)
+                {
+                    Console.Error.WriteLine($"[init] {name}");
+                }
+            }
+
+            Step("get-install-path");
             if (string.IsNullOrEmpty(Steam.GetInstallPath()) == true)
             {
                 throw new ClientInitializeException(ClientInitializeFailure.GetInstallPath, "failed to get Steam install path");
@@ -54,39 +64,49 @@ namespace SAM.API
                 Environment.SetEnvironmentVariable("SteamAppId", appId.ToString(CultureInfo.InvariantCulture));
             }
 
+            Step("load");
             if (Steam.Load() == false)
             {
                 throw new ClientInitializeException(ClientInitializeFailure.Load, "failed to load SteamClient");
             }
 
+            Step("create-interface");
             this.SteamClient = Steam.CreateInterface<Wrappers.SteamClient018>("SteamClient018");
             if (this.SteamClient == null)
             {
                 throw new ClientInitializeException(ClientInitializeFailure.CreateSteamClient, "failed to create ISteamClient018");
             }
 
+            Step("create-pipe");
             this._Pipe = this.SteamClient.CreateSteamPipe();
             if (this._Pipe == 0)
             {
                 throw new ClientInitializeException(ClientInitializeFailure.CreateSteamPipe, "failed to create pipe");
             }
 
+            Step("connect-global-user");
             this._User = this.SteamClient.ConnectToGlobalUser(this._Pipe);
             if (this._User == 0)
             {
                 throw new ClientInitializeException(ClientInitializeFailure.ConnectToGlobalUser, "failed to connect to global user");
             }
 
+            Step("get-utils");
             this.SteamUtils = this.SteamClient.GetSteamUtils004(this._Pipe);
             if (appId > 0 && this.SteamUtils.GetAppId() != (uint)appId)
             {
                 throw new ClientInitializeException(ClientInitializeFailure.AppIdMismatch, "appID mismatch");
             }
 
+            Step("get-user");
             this.SteamUser = this.SteamClient.GetSteamUser012(this._User, this._Pipe);
+            Step("get-userstats");
             this.SteamUserStats = this.SteamClient.GetSteamUserStats013(this._User, this._Pipe);
+            Step("get-apps001");
             this.SteamApps001 = this.SteamClient.GetSteamApps001(this._User, this._Pipe);
+            Step("get-apps008");
             this.SteamApps008 = this.SteamClient.GetSteamApps008(this._User, this._Pipe);
+            Step("done");
         }
 
         ~Client()

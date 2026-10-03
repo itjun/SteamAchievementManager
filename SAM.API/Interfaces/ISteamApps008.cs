@@ -56,5 +56,17 @@ namespace SAM.API.Interfaces
         public IntPtr GetFileDetails;
         public IntPtr GetLaunchCommandLine;
         public IntPtr IsSubscribedFromFamilySharing;
+
+        // 2023+ steamclient 在 v008 尾部追加的槽位（旧逆向到此为止）。
+        // 探测用途（--probe-slot）：按 (AppId_t) 形状逐槽试调用，找
+        // Steam Families 的 IsSubscribedFromFamilySharing(AppId) / IsSubscribedFromFreeGame(AppId)。
+        public IntPtr Unknown28;
+        public IntPtr Unknown29;
+        public IntPtr Unknown30;
+        public IntPtr Unknown31;
+        public IntPtr Unknown32;
+        public IntPtr Unknown33;
+        public IntPtr Unknown34;
+        public IntPtr Unknown35;
     }
 }

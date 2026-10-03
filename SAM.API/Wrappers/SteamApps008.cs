@@ -51,5 +51,33 @@ namespace SAM.API.Wrappers
             return NativeStrings.PointerToString(languagePointer);
         }
         #endregion
+
+        // 家庭共享判别（2026-10-04 实测定案）：
+        // - vtable 恰好 28 槽（0..27），2023+ 无尾部追加；
+        // - IsSubscribedFromFamilySharing 是"当前进程 SteamAppId 上下文"的无参方法
+        //   ——按 (appId) 带参调用不会崩但恒返回假值（勿用！）；
+        // - GetAppOwner 槽位带参/无参两种形状均 0xC0000005，不可调用。
+        // 因此主进程无法按 appId 查询家庭共享；唯一途径 = 以目标 appId 初始化的
+        // 子进程里调无参版（App.RunAppContextProbe / FamilySharingService）。
+        #region FamilySharing
+        [UnmanagedFunctionPointer(CallingConvention.ThisCall)]
+        [return: MarshalAs(UnmanagedType.I1)]
+        private delegate bool NativeIsFamilySharedCurrentApp(IntPtr self);
+
+        public bool IsFamilySharedCurrentApp()
+        {
+            return this.Call<bool, NativeIsFamilySharedCurrentApp>(
+                this.Functions.IsSubscribedFromFamilySharing, this.ObjectAddress);
+        }
+
+        [UnmanagedFunctionPointer(CallingConvention.ThisCall)]
+        private delegate uint NativeGetEarliestPurchaseUnixTime(IntPtr self, uint gameId);
+
+        public uint GetEarliestPurchaseUnixTime(uint gameId)
+        {
+            return this.Call<uint, NativeGetEarliestPurchaseUnixTime>(
+                this.Functions.GetEarliestPurchaseUnixTime, this.ObjectAddress, gameId);
+        }
+        #endregion
     }
 }
