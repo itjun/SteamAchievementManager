@@ -202,6 +202,8 @@ namespace SAM.WpfApp.ViewModels
         /// <summary>
         /// 按当前库重算分类（含数量），并重置选中为“全部”：数据集变了从全集看起，
         /// 也与 MainWindow 重建菜单后 Navigate 自动选中首项（全部）的高亮一致。
+        /// 四个固定类型无论数量多少恒显示（用户要求"直接全部显示"——侧栏项
+        /// 随刷新忽隐忽现会显得混乱）；"其他"归拢未知类型，仅有数据时出现。
         /// 最后通知 MainWindow 重建侧栏。
         /// </summary>
         private void RebuildCategories()
@@ -217,10 +219,7 @@ namespace SAM.WpfApp.ViewModels
 
             foreach (var (key, label) in KnownTypes)
             {
-                if (counts.TryGetValue(key, out var count) == true && count > 0)
-                {
-                    categories.Add(new GameCategory(key, label, count));
-                }
+                categories.Add(new GameCategory(key, label, counts.GetValueOrDefault(key)));
             }
 
             var known = KnownTypes.Select(type => type.Key).ToHashSet();

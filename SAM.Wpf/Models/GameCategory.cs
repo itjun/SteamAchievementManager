@@ -26,11 +26,10 @@ namespace SAM.WpfApp.Models
     /// 侧栏游戏类型分类（替代原筛选弹窗的四复选框，单选语义）。
     /// Key 取 games.xml 的 type 属性；"all" 汇总全部类型，"other" 归拢
     /// 已知四类（normal/demo/mod/junk）之外的类型（旧版未知类型恒显示）。
+    /// 四个固定类型恒在侧栏（数量 0 也显示，保持侧栏稳定不"忽隐忽现"）。
     /// </summary>
     public sealed record GameCategory(string Key, string Label, int Count)
     {
-        public string DisplayName => this.Count > 0
-            ? $"{this.Label} ({this.Count})"
-            : this.Label;
+        public string DisplayName => $"{this.Label} ({this.Count})";
     }
 }
