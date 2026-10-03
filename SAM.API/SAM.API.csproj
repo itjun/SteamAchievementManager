@@ -18,7 +18,9 @@
     <RepositoryType>Git</RepositoryType>
   </PropertyGroup>
   <PropertyGroup>
-    <TargetFramework>net48</TargetFramework>
+    <!-- net48: 供旧 WinForms 项目 (SAM.Picker / SAM.Game) 使用；
+         net8.0-windows: 供新 SAM.Core / SAM.Wpf 使用。源代码零差异。 -->
+    <TargetFrameworks>net48;net8.0-windows</TargetFrameworks>
     <LangVersion>9.0</LangVersion>
     <Platforms>x86</Platforms>
   </PropertyGroup>
