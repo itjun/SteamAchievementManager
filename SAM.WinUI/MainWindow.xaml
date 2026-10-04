@@ -68,7 +68,7 @@
             <TextBlock Text="{Binding StatusText, FallbackValue=就绪}"
                        Margin="16,0,16,0"
                        VerticalAlignment="Center"
-                       FontSize="12"
+                       Style="{StaticResource CaptionTextBlockStyle}"
                        TextTrimming="CharacterEllipsis"
                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
         </Border>

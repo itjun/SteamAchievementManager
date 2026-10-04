@@ -143,17 +143,18 @@
                                            TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"
                                            MinHeight="40" />
 
-                                <!-- 徽章行：家庭共享（唯一强调色）+ 已下载弱徽标 -->
+                                <!-- 徽章行：家庭共享（唯一强调色）+ 已下载弱徽标
+                                     （图标字号取规范档 16；芯片文字 ≥12px 最小可读） -->
                                 <StackPanel Orientation="Horizontal" Spacing="6">
                                     <Border Visibility="{Binding IsFamilyShared, Converter={StaticResource BoolToVisibilityConverter}}"
                                             Background="{ThemeResource FamilySharedBackgroundBrush}"
                                             BorderBrush="{ThemeResource FamilySharedBorderBrush}" BorderThickness="1"
-                                            CornerRadius="5" Padding="7,2"
+                                            CornerRadius="4" Padding="7,2"
                                             ToolTipService.ToolTip="来自 Steam 家庭共享（所有者是家庭成员，非本人购买）">
                                         <StackPanel Orientation="Horizontal" Spacing="5">
-                                            <FontIcon Glyph="&#xE716;" FontSize="12"
+                                            <FontIcon Glyph="&#xE716;" FontSize="16"
                                                       Foreground="{ThemeResource FamilySharedTextBrush}" />
-                                            <TextBlock Text="共享" FontSize="11" FontWeight="SemiBold"
+                                            <TextBlock Text="共享" Style="{StaticResource CaptionTextBlockStyle}" FontWeight="SemiBold"
                                                        Foreground="{ThemeResource FamilySharedTextBrush}" />
                                         </StackPanel>
                                     </Border>
@@ -163,9 +164,9 @@
                                             CornerRadius="4" Padding="7,2"
                                             ToolTipService.ToolTip="已下载到本机（来自 Steam 库目录扫描）">
                                         <StackPanel Orientation="Horizontal" Spacing="4">
-                                            <FontIcon Glyph="&#xE73E;" FontSize="11"
+                                            <FontIcon Glyph="&#xE73E;" FontSize="16"
                                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                            <TextBlock Text="已下载" FontSize="11"
+                                            <TextBlock Text="已下载" Style="{StaticResource CaptionTextBlockStyle}"
                                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                         </StackPanel>
                                     </Border>
@@ -192,10 +193,10 @@
                           HorizontalAlignment="Center" VerticalAlignment="Center"
                           Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}" />
 
-            <!-- 空状态 -->
+            <!-- 空状态（图标取规范档 48px） -->
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10"
                         Visibility="{Binding ShowEmpty, Converter={StaticResource BoolToVisibilityConverter}}">
-                <FontIcon Glyph="&#xE7FC;" FontSize="44" HorizontalAlignment="Center"
+                <FontIcon Glyph="&#xE7FC;" FontSize="48" HorizontalAlignment="Center"
                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                 <TextBlock Text="{Binding EmptyMessage}" Style="{StaticResource BodyTextBlockStyle}"
                            TextAlignment="Center"

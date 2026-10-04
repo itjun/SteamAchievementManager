@@ -443,3 +443,23 @@ SAM.sln（解决方案平台 x64，移除 x86）
 - 运行：`SAM.WinUI\bin\x64\Debug\net8.0-windows10.0.22621.0\win-x64\SAM.WinUI.exe`
   （自包含 WinAppRuntime，需 .NET 8 x64 桌面运行时；SAM.Worker.exe 同目录随附）。
 - 调试参数：`--theme=dark|light|system`、`--open-game=<appId>`（直达详情）。
+
+## 15. Fluent 2 规范逐项审计（2026-10-04，对照官方文档）
+
+按 learn.microsoft.com 设计规范（Fluent 2 在 Windows 的落地）逐项测试与修正：
+
+| 规范条目 | 要求 | 审计结果与处置 |
+| --- | --- | --- |
+| 圆角（geometry） | 页内元素 4px；窗口/浮层/对话框 8px | ❌ SurfaceCard/游戏卡 8px、分段壳 6px → 全部改 4px（同时修复与 GridViewItem 原生 4px 选中背板的圆角不咬合） |
+| 图标字号（iconography） | 仅 16/20/24/32/40/48/64 档 | ❌ 徽章芯片图标 11/12px → 16；空状态图标 44 → 48 |
+| 最小文本（typography） | ≥12px Regular / ≥14px Semibold | ❌ 芯片文字 11px → 12（Caption 级） |
+| 字阶 | XAML type ramp 静态样式 | ✅ Title/Subtitle/BodyStrong/Caption 全部走样式；状态栏改 Caption 样式 |
+| 字重 | 仅 Regular/Semibold，不用 Bold/Italic | ✅ |
+| 颜色 | 主题资源 + accent 克制（仅主操作） | ✅ AccentButton 仅保存按钮；家庭共享橙为语义色（WCAG≥4.5） |
+| 材质 | Mica 底层 + 内容分层；Acrylic 仅瞬态 | ✅ 底部操作栏 LayerFillColor；Win11 Mica/Win10 纯色回退 |
+| 动效 | Fluent 转场 | ❌ 库↔详情瞬间切换 → 补 Composition 入场（淡入 + 24px 上移，250ms，CubicBezier(0.1,0.9,0.2,1)） |
+| 空态/加载态 | 图标+说明+操作 | ✅ ProgressRing + 48px 图标 + 重试按钮 |
+| 对话框 | ContentDialog 原生（8px overlay） | ✅ 全部走 DialogService |
+| 键盘/焦点 | 系统焦点视觉 | ✅ 回车路径 + UseSystemFocusVisuals |
+
+复验：浅/深双主题截图（audit-*.png），库页 4px 卡片、16px 芯片图标、详情页/返回路径（含动效）双向正常。

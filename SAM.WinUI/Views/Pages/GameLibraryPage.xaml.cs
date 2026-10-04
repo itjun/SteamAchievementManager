@@ -23,6 +23,7 @@
 using System.ComponentModel;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Hosting;
 using Microsoft.UI.Xaml.Navigation;
 using SAM.WinUIApp.ViewModels;
 
@@ -79,13 +80,53 @@ namespace SAM.WinUIApp.Views.Pages
         private void ShowCurrent(ViewModelBase? viewModel)
         {
             var detail = viewModel is GameDetailViewModel;
-            this.DetailView.Visibility = detail ? Visibility.Visible : Visibility.Collapsed;
-            this.LibraryView.Visibility = detail ? Visibility.Collapsed : Visibility.Visible;
-
             var active = detail ? (FrameworkElement)this.DetailView : this.LibraryView;
+            var inactive = detail ? (FrameworkElement)this.LibraryView : this.DetailView;
+
             if (active.DataContext != viewModel)
             {
                 active.DataContext = viewModel;
+            }
+
+            var switchTarget = active.Visibility == Visibility.Collapsed;
+            if (switchTarget == true)
+            {
+                this.PlayEntrance(active);
+            }
+
+            active.Visibility = Visibility.Visible;
+            inactive.Visibility = Visibility.Collapsed;
+        }
+
+        /// <summary>Fluent 入场动效：淡入 + 24px 上移（约 250ms，标准缓动）。</summary>
+        private void PlayEntrance(UIElement element)
+        {
+            try
+            {
+                var visual = ElementCompositionPreview.GetElementVisual(element);
+                var compositor = visual.Compositor;
+                var easing = compositor.CreateCubicBezierEasingFunction(
+                    new System.Numerics.Vector2(0.1f, 0.9f),
+                    new System.Numerics.Vector2(0.2f, 1.0f));
+                var duration = TimeSpan.FromMilliseconds(250);
+
+                visual.Opacity = 0f;
+                visual.Offset = new System.Numerics.Vector3(0f, 24f, 0f);
+
+                var fade = compositor.CreateScalarKeyFrameAnimation();
+                fade.Duration = duration;
+                fade.InsertKeyFrame(1.0f, 1.0f, easing);
+
+                var rise = compositor.CreateVector3KeyFrameAnimation();
+                rise.Duration = duration;
+                rise.InsertKeyFrame(1.0f, new System.Numerics.Vector3(0f, 0f, 0f), easing);
+
+                visual.StartAnimation("Opacity", fade);
+                visual.StartAnimation("Offset", rise);
+            }
+            catch
+            {
+                // 动效失败不影响切换本身。
             }
         }
     }

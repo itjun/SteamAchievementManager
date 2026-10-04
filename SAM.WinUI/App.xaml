@@ -26,13 +26,13 @@
 
             <!-- ============ Fluent 共享样式（WinUI 视觉规范） ============ -->
 
-            <!-- 分段控件（Segmented）外壳：灰调 Subtle 填充 + 弱描边 + 6px 圆角
-                 （浅色下 ControlFill* 近白不可见，选中段无法与之区分） -->
+            <!-- 分段控件（Segmented）外壳：灰调 Subtle 填充 + 弱描边 + 4px 圆角
+                 （页内元素圆角规范 = 4px；WASDK 2.x 无原生 Segmented，沿用分段 RadioButton 方案） -->
             <Style x:Key="SegmentedGroup" TargetType="Border">
                 <Setter Property="Background" Value="{ThemeResource SubtleFillColorTertiaryBrush}" />
                 <Setter Property="BorderBrush" Value="{ThemeResource ControlStrokeColorSecondaryBrush}" />
                 <Setter Property="BorderThickness" Value="1" />
-                <Setter Property="CornerRadius" Value="6" />
+                <Setter Property="CornerRadius" Value="4" />
                 <Setter Property="Padding" Value="2" />
             </Style>
 
@@ -88,12 +88,13 @@
                 </Setter>
             </Style>
 
-            <!-- 内容卡片：圆角 8 + 卡片填充 + 描边（浮于 Mica 上） -->
+            <!-- 内容卡片：圆角 4（页内元素规范）+ 卡片填充 + 描边（浮于 Mica 上）；
+                 与 GridViewItem/ListViewItem 原生 4px 背板圆角咬合 -->
             <Style x:Key="SurfaceCard" TargetType="Border">
                 <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
                 <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
                 <Setter Property="BorderThickness" Value="1" />
-                <Setter Property="CornerRadius" Value="8" />
+                <Setter Property="CornerRadius" Value="4" />
             </Style>
 
             <!-- 列表行分隔线（WinUI Divider） -->
