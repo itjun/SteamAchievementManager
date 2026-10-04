@@ -3,29 +3,62 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       Title="设置">
 
-    <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Margin="24,16" MaxWidth="640" HorizontalAlignment="Left">
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="28,12,28,24" MaxWidth="720" HorizontalAlignment="Left">
 
-            <TextBlock Text="外观" FontSize="20" FontWeight="SemiBold"
+            <TextBlock Text="设置"
+                       FontSize="28" FontWeight="SemiBold"
                        Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
-            <TextBlock Text="主题" FontSize="13" Margin="0,16,0,4"
-                       Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
-            <TextBlock Text="深色模式适合配合 Steam 使用；跟随系统将随 Windows 外观自动切换。"
-                       FontSize="12" Margin="0,0,0,8"
-                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-            <ComboBox ItemsSource="{Binding ThemeOptions}"
-                      SelectedItem="{Binding SelectedThemeOption}"
-                      DisplayMemberPath="Label"
-                      MinWidth="220" HorizontalAlignment="Left" />
 
-            <TextBlock Text="关于" FontSize="20" FontWeight="SemiBold" Margin="0,28,0,12"
+            <!-- 外观 -->
+            <TextBlock Text="外观" FontSize="20" FontWeight="SemiBold" Margin="0,24,0,10"
                        Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
-            <TextBlock FontSize="13" LineHeight="22"
-                       Foreground="{DynamicResource TextFillColorSecondaryBrush}">
-                <Run Text="Steam 成就管理器（重构版） 7.1.0"/><LineBreak/>
-                <Run Text="基于 .NET 8 + WPF UI，正在按阶段替换旧版 WinForms 客户端。"/><LineBreak/>
-                <Run Text="旧版 SAM.Picker / SAM.Game 在功能对齐前保持可用。"/>
-            </TextBlock>
+
+            <Border Style="{StaticResource SurfaceCard}" Padding="18,14,18,16">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="主题" FontSize="14"
+                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                        <TextBlock Text="深色模式适合配合 Steam 使用；跟随系统将随 Windows 外观自动切换。"
+                                   FontSize="12" Margin="0,4,24,0" TextWrapping="Wrap"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+
+                    <!-- 分段控件（替代未主题化的原生 ComboBox） -->
+                    <Border Grid.Column="1" Style="{StaticResource SegmentedGroup}"
+                            VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal">
+                            <RadioButton Style="{StaticResource SegmentedItem}" Content="跟随系统" GroupName="ThemeMode"
+                                         IsChecked="{Binding IsSystemTheme, Mode=TwoWay}" />
+                            <RadioButton Style="{StaticResource SegmentedItem}" Content="浅色" GroupName="ThemeMode"
+                                         IsChecked="{Binding IsLightTheme, Mode=TwoWay}" />
+                            <RadioButton Style="{StaticResource SegmentedItem}" Content="深色" GroupName="ThemeMode"
+                                         IsChecked="{Binding IsDarkTheme, Mode=TwoWay}" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <!-- 关于 -->
+            <TextBlock Text="关于" FontSize="20" FontWeight="SemiBold" Margin="0,28,0,10"
+                       Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+
+            <Border Style="{StaticResource SurfaceCard}" Padding="18,14,18,16">
+                <StackPanel>
+                    <TextBlock Text="Steam 成就管理器（重构版）" FontSize="14"
+                               Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                    <TextBlock FontSize="12" LineHeight="20" Margin="0,6,0,0"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                        <Run Text="版本 7.1.0 · 基于 .NET 8 + WPF UI（Fluent）"/><LineBreak/>
+                        <Run Text="按阶段替换旧版 WinForms 客户端（SAM.Picker / SAM.Game）。"/>
+                    </TextBlock>
+                </StackPanel>
+            </Border>
 
         </StackPanel>
     </ScrollViewer>

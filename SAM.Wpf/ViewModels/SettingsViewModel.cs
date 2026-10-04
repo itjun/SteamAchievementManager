@@ -64,12 +64,35 @@ namespace SAM.WpfApp.ViewModels
                 option => option.Mode == settingsService.Settings.Theme) ?? this.ThemeOptions[0];
         }
 
+        /// <summary>设置页分段控件绑定：选中段返回 true；置 true 切换主题（互斥由 RadioButton 分组保证）。</summary>
+        public bool IsSystemTheme
+        {
+            get => this.SelectedThemeOption?.Mode == ThemeMode.System;
+            set { if (value == true) { this.SelectedThemeOption = this.ThemeOptions[0]; } }
+        }
+
+        public bool IsLightTheme
+        {
+            get => this.SelectedThemeOption?.Mode == ThemeMode.Light;
+            set { if (value == true) { this.SelectedThemeOption = this.ThemeOptions[1]; } }
+        }
+
+        public bool IsDarkTheme
+        {
+            get => this.SelectedThemeOption?.Mode == ThemeMode.Dark;
+            set { if (value == true) { this.SelectedThemeOption = this.ThemeOptions[2]; } }
+        }
+
         partial void OnSelectedThemeOptionChanged(ThemeOption value)
         {
             if (value == null)
             {
                 return;
             }
+
+            this.OnPropertyChanged(nameof(this.IsSystemTheme));
+            this.OnPropertyChanged(nameof(this.IsLightTheme));
+            this.OnPropertyChanged(nameof(this.IsDarkTheme));
 
             this._ThemeService.Apply(value.Mode, System.Windows.Application.Current?.MainWindow);
             this._SettingsService.Settings.Theme = value.Mode;
