@@ -11,6 +11,13 @@
                  WindowCornerPreference="Default"
                  FontFamily="Segoe UI Variable Display, Segoe UI">
 
+    <!-- NavigationView 内容区默认为实底 ApplicationBackgroundBrush，
+         覆盖为透明让 Mica 贯通整个窗口（Win11 设置/Gallery 同款分层：
+         窗格与内容浮于 Mica 之上，列表等内容再以卡片形式分层）。 -->
+    <ui:FluentWindow.Resources>
+        <SolidColorBrush x:Key="NavigationViewContentBackground" Color="Transparent" />
+    </ui:FluentWindow.Resources>
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />
@@ -24,7 +31,8 @@
                            IsPaneToggleVisible="False"
                            IsPaneOpen="True"
                            OpenPaneLength="220"
-                           PaneDisplayMode="Left">
+                           PaneDisplayMode="Left"
+                           Background="Transparent">
 
             <!-- 窗格头部：logo 在前 + 应用名同行（用户要求）；隐藏汉堡按钮后
                  TitleBar 左置标题会与首个菜单项叠印，故标题由此处渲染，
@@ -59,14 +67,14 @@
                      Title="">
         </ui:TitleBar>
 
-        <!-- 底部状态栏 -->
+        <!-- 底部状态栏：透明底透出 Mica，仅以发丝线与内容区分层 -->
         <Border Grid.Row="1"
-                Height="28"
-                Background="{DynamicResource ApplicationBackgroundBrush}"
-                BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                Height="32"
+                Background="Transparent"
+                BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}"
                 BorderThickness="0,1,0,0">
             <TextBlock Text="{Binding StatusText, FallbackValue=就绪}"
-                       Margin="14,0,12,0"
+                       Margin="16,0,16,0"
                        VerticalAlignment="Center"
                        FontSize="12"
                        TextTrimming="CharacterEllipsis"
