@@ -145,7 +145,11 @@ namespace SAM.WinUIApp.Services
             this.UpdateCaptionButtons();
         }
 
-        /// <summary>标题栏按钮颜色（ExtendsContentIntoTitleBar 后不会自动跟随应用主题，需手动指定）。</summary>
+        /// <summary>
+        /// 标题栏按钮配色（ExtendsContentIntoTitleBar 后系统不跟随应用主题）。
+        /// Win11 Mica 下保持透明让材质贯通；其余平台给按钮背景填主题底色，
+        /// 否则系统按默认浅色画非客户区（深色模式下出现白色按钮条）。
+        /// </summary>
         private void UpdateCaptionButtons()
         {
             var window = this._Window;
@@ -163,10 +167,27 @@ namespace SAM.WinUIApp.Services
                 titleBar.ButtonForegroundColor = foreground;
                 titleBar.ButtonHoverForegroundColor = foreground;
                 titleBar.ButtonPressedForegroundColor = foreground;
-                titleBar.ButtonBackgroundColor = null;
-                titleBar.ButtonHoverBackgroundColor = dark
+
+                var hoverFill = dark
                     ? Windows.UI.Color.FromArgb(0x33, 0xFF, 0xFF, 0xFF)
                     : Windows.UI.Color.FromArgb(0x33, 0x00, 0x00, 0x00);
+                titleBar.ButtonHoverBackgroundColor = hoverFill;
+
+                if (Environment.OSVersion.Version.Build >= 22000)
+                {
+                    // Mica：保持透明，材质贯通标题栏。
+                    titleBar.ButtonBackgroundColor = null;
+                    titleBar.ButtonInactiveBackgroundColor = null;
+                }
+                else
+                {
+                    // 主题底色（SolidBackgroundFillColorBase：深 #202020 / 浅 #F3F3F3）。
+                    var baseColor = dark
+                        ? Windows.UI.Color.FromArgb(255, 0x20, 0x20, 0x20)
+                        : Windows.UI.Color.FromArgb(255, 0xF3, 0xF3, 0xF3);
+                    titleBar.ButtonBackgroundColor = baseColor;
+                    titleBar.ButtonInactiveBackgroundColor = baseColor;
+                }
             }
             catch
             {
