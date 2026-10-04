@@ -73,11 +73,13 @@
                                     </VisualStateGroup>
                                     <VisualStateGroup x:Name="CheckStates">
                                         <VisualState x:Name="Unchecked" />
+                                        <!-- 选中段 = accent 填充 + OnAccent 文字（与 ToggleButton 选中语言一致；
+                                             原"卡片填充+描边"在深色下与分段壳对比不足，几乎不可辨） -->
                                         <VisualState x:Name="Checked">
                                             <VisualState.Setters>
-                                                <Setter Target="Root.Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
-                                                <Setter Target="Root.BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
-                                                <Setter Target="Content.Foreground" Value="{ThemeResource TextFillColorPrimaryBrush}" />
+                                                <Setter Target="Root.Background" Value="{ThemeResource AccentFillColorDefaultBrush}" />
+                                                <Setter Target="Root.BorderBrush" Value="{ThemeResource AccentFillColorDefaultBrush}" />
+                                                <Setter Target="Content.Foreground" Value="{ThemeResource TextOnAccentFillColorPrimaryBrush}" />
                                             </VisualState.Setters>
                                         </VisualState>
                                     </VisualStateGroup>
