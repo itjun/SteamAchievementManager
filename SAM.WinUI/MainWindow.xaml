@@ -8,9 +8,11 @@
     mc:Ignorable="d">
 
     <!-- Fluent 2 外壳：左导航（无汉堡）+ 底部状态栏（发丝线分层）。
-         Win11：NavigationView 透明背景让 Mica 贯通（WinUI 原生内容分层）；
-         Win10：ThemeService 给 RootGrid 纯色主题背景。 -->
-    <Grid x:Name="RootGrid">
+         Win11：Mica 生效时 ThemeService 会把根背景置空让材质贯通；
+         其余情况由下方 ThemeResource 提供主题感知底色（随 RequestedTheme 正确解析）。
+         （勿在代码里以 Application.Current.Resources 取主题画刷——那按应用级
+          主题解析，元素级 RequestedTheme 对它无效，会把深色模式铺成浅底。） -->
+    <Grid x:Name="RootGrid" Background="{ThemeResource SolidBackgroundFillColorBaseBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />

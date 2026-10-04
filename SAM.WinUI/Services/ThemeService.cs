@@ -116,8 +116,10 @@ namespace SAM.WinUIApp.Services
         }
 
         /// <summary>
-        /// 平台背景：Win11 用 Mica（内容保持透明分层）；Win10 无 Mica，
-        /// WinUI 3 窗口默认透明会透出桌面，回退为纯色主题背景。
+        /// 平台背景：Win11 用 Mica（根背景置空让材质贯通）；其余情况由
+        /// MainWindow.xaml 的 {ThemeResource SolidBackgroundFillColorBaseBrush} 提供
+        /// 主题感知底色——不要在代码里从 Application.Current.Resources 取主题画刷
+        ///（那按应用级主题解析，元素级 RequestedTheme 对它无效）。
         /// </summary>
         private void UpdatePlatformBackdrop(FrameworkElement root)
         {
@@ -138,12 +140,6 @@ namespace SAM.WinUIApp.Services
             else
             {
                 window.SystemBackdrop = null;
-                if (root is Microsoft.UI.Xaml.Controls.Panel panel)
-                {
-                    panel.Background = FindThemeBrush("SolidBackgroundFillColorBaseBrush")
-                        ?? FindThemeBrush("ApplicationPageBackgroundThemeBrush")
-                        ?? new SolidColorBrush(Microsoft.UI.Colors.LightGray);
-                }
             }
 
             this.UpdateCaptionButtons();
@@ -176,17 +172,6 @@ namespace SAM.WinUIApp.Services
             {
                 // 旧系统不支持时忽略（按钮维持系统默认配色）。
             }
-        }
-
-        private static Brush? FindThemeBrush(string key)
-        {
-            if (Application.Current.Resources.TryGetValue(key, out var value) == true &&
-                value is Brush brush)
-            {
-                return brush;
-            }
-
-            return null;
         }
     }
 }

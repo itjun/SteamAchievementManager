@@ -474,3 +474,25 @@ SAM.sln（解决方案平台 x64，移除 x86）
   UI 线程；内存流碰巧同步完成时不触发。正解 = `DispatcherQueue` 上可等待封装
   （DispatcherQueueAsync.EnqueueActionAsync，TryEnqueue+TCS）后 `await SetSourceAsync`。
   另：WASDK 2.5 无内建 `DispatcherQueue.EnqueueAsync` 扩展，故自封装。
+
+## 17. 深色模式从未真正工作过（2026-10-04，"深色模式有问题"定案）
+
+**症状**：深色下窗格/背景浅色（#F3F3F3）、卡片灰白——主题只生效了一半。
+
+**排查关键**：此前多轮"深色验证通过"均为视觉幻觉（重蹈"视觉大模型会幻觉颜色"覆辙），
+本轮全部以 GetPixel 像素采样定案（pane=243=浅 / 应为 32=深）。
+回溯采样 phase3-dark.png 像素同样是 243/188——**深色自 Phase 3 起从未生效**。
+
+**根因**：Win10 回退分支用 `Application.Current.Resources.TryGetValue(...)` 取
+`SolidBackgroundFillColorBaseBrush` 后**代码赋值**给 RootGrid.Background——
+**Application 级字典按应用主题（跟随系统=浅色）解析，元素级 RequestedTheme=Dark 对它无效**
+→ 深色模式下根背景被铺成浅色 #F3F3F3，盖住整窗；而元素树 ActualTheme 其实全为 Dark
+（诊断证实 root/nav 均 Dark），窗格与卡片的异常观感皆是这层浅底的下游。
+
+**修法**：RootGrid 背景改 XAML `{ThemeResource SolidBackgroundFillColorBaseBrush}`
+（按元素级主题正确解析，随 RequestedTheme 切换）；代码只在 Win11 Mica 分支置 null。
+**通用教训：不要在代码里经 Application.Current.Resources 解析主题画刷再赋给元素——
+ 用 XAML ThemeResource 或元素的 Resources 解析。**
+
+**复验（像素）**：--theme=dark 启动 pane=32/卡片=58；--theme=light pane=243/卡片=247；
+设置页运行时切换 pane=32/卡片=50——三路径全部正确。
