@@ -42,7 +42,7 @@ namespace SAM.WpfApp.Views.Controls
             }
 
             if (this.DataContext is GameLibraryViewModel viewModel &&
-                ItemsControl.ContainerFromElement(this.GameList, source) is ListBoxItem)
+                ItemsControl.ContainerFromElement(this.GameList, source) is ListViewItem)
             {
                 viewModel.OpenGameCommand.Execute(this.GameList.SelectedItem);
             }

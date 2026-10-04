@@ -3,208 +3,246 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml">
 
-    <Grid>
+    <Grid Margin="28,12,28,16">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <!-- 页头：标题 + 操作 + 搜索 -->
-        <StackPanel Grid.Row="0" Margin="24,12,24,8">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
+        <!-- 页头：标题 + 命令区（主操作强调色填充，次操作弱化为 Secondary） -->
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
 
-                <TextBlock Text="游戏库"
-                           FontSize="24" FontWeight="SemiBold" VerticalAlignment="Center"
-                           Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+            <TextBlock Text="游戏库"
+                       FontSize="28" FontWeight="SemiBold" VerticalAlignment="Center"
+                       Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
 
-                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                    <ui:Button Command="{Binding AddGameCommand}" ToolTip="手动添加游戏" Margin="0,0,8,0">
-                        <StackPanel Orientation="Horizontal">
-                            <ui:SymbolIcon Symbol="Add24" />
-                            <TextBlock Text="添加" Margin="6,0,0,0" />
-                        </StackPanel>
-                    </ui:Button>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                <!-- 手动检测家庭共享：探测会让 Steam 短暂标记游戏为运行中，
+                     可能触发已安装游戏的更新排队，故不自动执行 -->
+                <ui:Button Command="{Binding DetectFamilySharingCommand}"
+                           Appearance="Secondary"
+                           ToolTip="重新检测所有游戏的家庭共享状态（Steam 会把游戏短暂标记为运行中，可能触发已安装游戏的更新检查）"
+                           Margin="0,0,8,0">
+                    <StackPanel Orientation="Horizontal">
+                        <ui:SymbolIcon Symbol="PeopleCommunity24" />
+                        <TextBlock Text="检测共享" Margin="8,0,0,0" />
+                    </StackPanel>
+                </ui:Button>
 
-                    <!-- 手动检测家庭共享：探测会让 Steam 短暂标记游戏为运行中，
-                         可能触发已安装游戏的更新排队，故不自动执行 -->
-                    <ui:Button Command="{Binding DetectFamilySharingCommand}"
-                               ToolTip="重新检测所有游戏的家庭共享状态（Steam 会把游戏短暂标记为运行中，可能触发已安装游戏的更新检查）"
-                               Margin="0,0,8,0">
-                        <StackPanel Orientation="Horizontal">
-                            <ui:SymbolIcon Symbol="PeopleCommunity24" />
-                            <TextBlock Text="检测共享" Margin="6,0,0,0" />
-                        </StackPanel>
-                    </ui:Button>
+                <ui:Button Command="{Binding RefreshCommand}"
+                           Appearance="Secondary"
+                           ToolTip="刷新游戏库"
+                           Margin="0,0,8,0">
+                    <StackPanel Orientation="Horizontal">
+                        <ui:SymbolIcon Symbol="ArrowClockwise24" />
+                        <TextBlock Text="刷新" Margin="8,0,0,0" />
+                    </StackPanel>
+                </ui:Button>
 
-                    <ui:Button Command="{Binding RefreshCommand}" ToolTip="刷新游戏库">
-                        <StackPanel Orientation="Horizontal">
-                            <ui:SymbolIcon Symbol="ArrowClockwise24" />
-                            <TextBlock Text="刷新" Margin="6,0,0,0" />
-                        </StackPanel>
-                    </ui:Button>
-                </StackPanel>
-            </Grid>
+                <ui:Button Command="{Binding AddGameCommand}"
+                           Appearance="Primary"
+                           ToolTip="手动添加游戏">
+                    <StackPanel Orientation="Horizontal">
+                        <ui:SymbolIcon Symbol="Add24" />
+                        <TextBlock Text="添加" Margin="8,0,0,0" />
+                    </StackPanel>
+                </ui:Button>
+            </StackPanel>
+        </Grid>
 
-            <Grid Margin="0,12,0,0">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
+        <!-- 工具行：搜索（左）+ 分段式筛选（右，替代未主题化的原生 ComboBox） -->
+        <Grid Grid.Row="1" Margin="0,20,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" MinWidth="180" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
 
-                <ui:TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged, Delay=200}"
-                            PlaceholderText="搜索游戏..."
-                            ClearButtonEnabled="True">
-                    <ui:TextBox.Icon>
-                        <ui:SymbolIcon Symbol="Search24" />
-                    </ui:TextBox.Icon>
-                </ui:TextBox>
+            <ui:TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged, Delay=200}"
+                        PlaceholderText="搜索游戏..."
+                        MaxWidth="460"
+                        HorizontalAlignment="Stretch"
+                        ClearButtonEnabled="True">
+                <ui:TextBox.Icon>
+                    <ui:SymbolIcon Symbol="Search24" />
+                </ui:TextBox.Icon>
+            </ui:TextBox>
 
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                 <!-- 所有权筛选：全部 / 自购 / 家庭共享（与侧栏类型分类正交） -->
-                <ComboBox Grid.Column="1"
-                          Width="112" Margin="10,0,0,0"
-                          VerticalAlignment="Center"
-                          ToolTip="按所有权筛选"
-                          ItemsSource="{Binding OwnershipChoices}"
-                          DisplayMemberPath="Label"
-                          SelectedValuePath="Value"
-                          SelectedValue="{Binding Ownership, Mode=TwoWay}" />
+                <TextBlock Text="所有权" FontSize="12" Margin="20,0,8,0" VerticalAlignment="Center"
+                           Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
+                <Border Style="{StaticResource SegmentedGroup}"
+                        ToolTip="按所有权筛选">
+                    <StackPanel Orientation="Horizontal">
+                        <RadioButton Style="{StaticResource SegmentedItem}" Content="全部" GroupName="OwnershipFilter"
+                                     IsChecked="{Binding Ownership, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=All, Mode=TwoWay}" />
+                        <RadioButton Style="{StaticResource SegmentedItem}" Content="自购" GroupName="OwnershipFilter"
+                                     IsChecked="{Binding Ownership, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Owned, Mode=TwoWay}" />
+                        <RadioButton Style="{StaticResource SegmentedItem}" Content="共享" GroupName="OwnershipFilter"
+                                     IsChecked="{Binding Ownership, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=FamilyShared, Mode=TwoWay}" />
+                    </StackPanel>
+                </Border>
 
                 <!-- 安装状态筛选：全部 / 已下载 / 未下载 -->
-                <ComboBox Grid.Column="2"
-                          Width="112" Margin="8,0,0,0"
-                          VerticalAlignment="Center"
-                          ToolTip="按本机安装状态筛选"
-                          ItemsSource="{Binding InstallChoices}"
-                          DisplayMemberPath="Label"
-                          SelectedValuePath="Value"
-                          SelectedValue="{Binding Install, Mode=TwoWay}" />
-            </Grid>
+                <TextBlock Text="安装" FontSize="12" Margin="16,0,8,0" VerticalAlignment="Center"
+                           Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
+                <Border Style="{StaticResource SegmentedGroup}"
+                        ToolTip="按本机安装状态筛选">
+                    <StackPanel Orientation="Horizontal">
+                        <RadioButton Style="{StaticResource SegmentedItem}" Content="全部" GroupName="InstallFilter"
+                                     IsChecked="{Binding Install, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=All, Mode=TwoWay}" />
+                        <RadioButton Style="{StaticResource SegmentedItem}" Content="已下载" GroupName="InstallFilter"
+                                     IsChecked="{Binding Install, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Installed, Mode=TwoWay}" />
+                        <RadioButton Style="{StaticResource SegmentedItem}" Content="未下载" GroupName="InstallFilter"
+                                     IsChecked="{Binding Install, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=NotInstalled, Mode=TwoWay}" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Grid>
 
-            <ui:InfoBar Margin="0,12,0,0"
-                        IsOpen="{Binding UsedFallback, Mode=TwoWay}"
-                        Title="游戏列表下载失败"
-                        Message="已回退到默认列表，请检查网络后刷新重试。"
-                        Severity="Warning" />
-        </StackPanel>
+        <ui:InfoBar Grid.Row="2" Margin="0,0,0,12"
+                    IsOpen="{Binding UsedFallback, Mode=TwoWay}"
+                    Title="游戏列表下载失败"
+                    Message="已回退到默认列表，请检查网络后刷新重试。"
+                    Severity="Warning" />
 
-        <!-- 游戏列表：紧凑行式布局（约 72px 行高），虚拟化 + 图标懒加载 -->
-        <ListBox x:Name="GameList"
-                 Grid.Row="1"
-                 ItemsSource="{Binding Games}"
-                 Background="Transparent"
-                 BorderThickness="0"
-                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                 VirtualizingPanel.IsVirtualizing="True"
-                 VirtualizingPanel.VirtualizationMode="Recycling"
-                 MouseDoubleClick="OnGameListDoubleClick">
-            <ListBox.InputBindings>
-                <KeyBinding Key="Enter"
-                            Command="{Binding OpenGameCommand}"
-                            CommandParameter="{Binding SelectedItem, ElementName=GameList}" />
-            </ListBox.InputBindings>
-            <ListBox.ItemTemplate>
-                <DataTemplate>
-                    <Grid Margin="12,4" MinHeight="64">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="150" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
+        <!-- 游戏列表：卡片容器 + Fluent 行（Subtle 悬停/选中、发丝分隔线），
+             虚拟化 + 图标懒加载保持不变 -->
+        <Grid Grid.Row="3">
+            <Border Style="{StaticResource SurfaceCard}">
+                <ListView x:Name="GameList"
+                          ItemsSource="{Binding Games}"
+                          Background="Transparent"
+                          BorderThickness="0"
+                          Padding="4"
+                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                          VirtualizingPanel.IsVirtualizing="True"
+                          VirtualizingPanel.VirtualizationMode="Recycling"
+                          ItemContainerStyle="{StaticResource FluentListItem}"
+                          MouseDoubleClick="OnGameListDoubleClick">
+                    <ListView.InputBindings>
+                        <KeyBinding Key="Enter"
+                                    Command="{Binding OpenGameCommand}"
+                                    CommandParameter="{Binding SelectedItem, ElementName=GameList}" />
+                    </ListView.InputBindings>
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <Grid MinHeight="64">
+                                <!-- 行分隔线：首行不显示（PreviousData 为 null） -->
+                                <Border Style="{StaticResource RowSeparator}"
+                                        VerticalAlignment="Top"
+                                        Margin="12,0,12,0"
+                                        Visibility="{Binding RelativeSource={RelativeSource PreviousData}, Converter={StaticResource NullToVisibilityConverter}, FallbackValue=Collapsed}" />
 
-                        <Border Width="146" Height="52"
-                                HorizontalAlignment="Left" VerticalAlignment="Center"
-                                CornerRadius="4" Background="#33808080">
-                            <Image Source="{Binding Icon}" Stretch="Uniform" Margin="2" />
-                        </Border>
+                                <Grid Margin="12,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="150" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
 
-                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="14,0,12,0">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
+                                    <Border Width="146" Height="52"
+                                            HorizontalAlignment="Left" VerticalAlignment="Center"
+                                            CornerRadius="4"
+                                            Background="{DynamicResource SubtleFillColorTertiaryBrush}">
+                                        <Image Source="{Binding Icon}" Stretch="Uniform" Margin="2" />
+                                    </Border>
 
-                                <TextBlock Text="{Binding Name}"
-                                           FontSize="14" FontWeight="SemiBold"
-                                           TextTrimming="CharacterEllipsis"
-                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="14,0,12,0">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
 
-                                <!-- 家庭共享状态章（本行唯一强调色）：图标+文字+描边；
-                                     自购行无标记（默认态），悬停解释语义。
-                                     配色为主题感知画刷（ThemeService 维护，两主题均≥4.5:1） -->
-                                <Border Grid.Column="1"
-                                        Visibility="{Binding IsFamilyShared, Converter={StaticResource BoolToVisibilityConverter}}"
-                                        Background="{DynamicResource FamilySharedBackgroundBrush}"
-                                        BorderBrush="{DynamicResource FamilySharedBorderBrush}" BorderThickness="1"
-                                        CornerRadius="5" Padding="8,2" Margin="8,0,0,0"
-                                        VerticalAlignment="Center"
-                                        ToolTip="来自 Steam 家庭共享（所有者是家庭成员，非本人购买）">
-                                    <StackPanel Orientation="Horizontal">
-                                        <ui:SymbolIcon Symbol="PeopleCommunity24" FontSize="13"
-                                                       Foreground="{DynamicResource FamilySharedTextBrush}" />
-                                        <TextBlock Text="家庭共享" FontSize="12" FontWeight="SemiBold"
-                                                   Margin="5,0,0,0" Foreground="{DynamicResource FamilySharedTextBrush}" />
+                                            <TextBlock Text="{Binding Name}"
+                                                       FontSize="14" FontWeight="SemiBold"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+
+                                            <!-- 家庭共享状态章（本行唯一强调色）：图标+文字+描边；
+                                                 自购行无标记（默认态），悬停解释语义。
+                                                 配色为主题感知画刷（ThemeService 维护，两主题均≥4.5:1） -->
+                                            <Border Grid.Column="1"
+                                                    Visibility="{Binding IsFamilyShared, Converter={StaticResource BoolToVisibilityConverter}}"
+                                                    Background="{DynamicResource FamilySharedBackgroundBrush}"
+                                                    BorderBrush="{DynamicResource FamilySharedBorderBrush}" BorderThickness="1"
+                                                    CornerRadius="5" Padding="8,2" Margin="8,0,0,0"
+                                                    VerticalAlignment="Center"
+                                                    ToolTip="来自 Steam 家庭共享（所有者是家庭成员，非本人购买）">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <ui:SymbolIcon Symbol="PeopleCommunity24" FontSize="13"
+                                                                   Foreground="{DynamicResource FamilySharedTextBrush}" />
+                                                    <TextBlock Text="家庭共享" FontSize="12" FontWeight="SemiBold"
+                                                               Margin="5,0,0,0" Foreground="{DynamicResource FamilySharedTextBrush}" />
+                                                </StackPanel>
+                                            </Border>
+                                        </Grid>
+
+                                        <!-- 第二行：已下载徽标 + 类型徽标（弱芯片）+ App ID（三级信息） -->
+                                        <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                                            <Border Visibility="{Binding IsInstalled, Converter={StaticResource BoolToVisibilityConverter}}"
+                                                    Background="{DynamicResource SubtleFillColorTertiaryBrush}"
+                                                    CornerRadius="4" Padding="7,1" Margin="0,0,6,0"
+                                                    VerticalAlignment="Center"
+                                                    ToolTip="已下载到本机（来自 Steam 库目录扫描）">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <ui:SymbolIcon Symbol="CheckmarkCircle24" FontSize="11"
+                                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                                    <TextBlock Text="已下载" FontSize="11" Margin="4,0,0,0"
+                                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                                </StackPanel>
+                                            </Border>
+
+                                            <Border Background="{DynamicResource SubtleFillColorTertiaryBrush}"
+                                                    CornerRadius="4" Padding="7,1" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding TypeLabel}" FontSize="11"
+                                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                            </Border>
+                                            <TextBlock Text="{Binding Subtitle}" FontSize="12" Margin="8,0,0,0"
+                                                       VerticalAlignment="Center"
+                                                       Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
+                                        </StackPanel>
                                     </StackPanel>
-                                </Border>
+
+                                    <ui:SymbolIcon Grid.Column="2" Symbol="ChevronRight20"
+                                                   VerticalAlignment="Center"
+                                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
+                                </Grid>
                             </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </Border>
 
-                            <!-- 第二行：已下载徽标 + 类型徽标（主题色弱芯片）+ App ID（三级信息） -->
-                            <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
-                                <Border Visibility="{Binding IsInstalled, Converter={StaticResource BoolToVisibilityConverter}}"
-                                        Background="{DynamicResource ControlFillColorSecondaryBrush}"
-                                        CornerRadius="4" Padding="7,1" Margin="0,0,6,0"
-                                        VerticalAlignment="Center"
-                                        ToolTip="已下载到本机（来自 Steam 库目录扫描）">
-                                    <StackPanel Orientation="Horizontal">
-                                        <ui:SymbolIcon Symbol="CheckmarkCircle24" FontSize="11"
-                                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                                        <TextBlock Text="已下载" FontSize="11" Margin="4,0,0,0"
-                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                                    </StackPanel>
-                                </Border>
+            <!-- 加载中 -->
+            <ui:ProgressRing Grid.Row="0"
+                             IsIndeterminate="True"
+                             Width="36" Height="36"
+                             HorizontalAlignment="Center" VerticalAlignment="Center"
+                             Background="Transparent"
+                             Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}" />
 
-                                <Border Background="{DynamicResource ControlFillColorSecondaryBrush}"
-                                        CornerRadius="4" Padding="7,1" VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding TypeLabel}" FontSize="11"
-                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                                </Border>
-                                <TextBlock Text="{Binding Subtitle}" FontSize="12" Margin="8,0,0,0"
-                                           VerticalAlignment="Center"
-                                           Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
-                            </StackPanel>
-                        </StackPanel>
-
-                        <ui:SymbolIcon Grid.Column="2" Symbol="ChevronRight20"
-                                       VerticalAlignment="Center"
-                                       Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
-                    </Grid>
-                </DataTemplate>
-            </ListBox.ItemTemplate>
-        </ListBox>
-
-        <!-- 加载中 -->
-        <ui:ProgressRing Grid.Row="1"
-                         IsIndeterminate="True"
-                         Width="36" Height="36"
-                         HorizontalAlignment="Center" VerticalAlignment="Center"
-                         Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}" />
-
-        <!-- 空状态 -->
-        <StackPanel Grid.Row="1"
-                    HorizontalAlignment="Center" VerticalAlignment="Center"
-                    Visibility="{Binding ShowEmpty, Converter={StaticResource BoolToVisibilityConverter}}">
-            <ui:SymbolIcon Symbol="Games48" FontSize="44"
+            <!-- 空状态 -->
+            <StackPanel Grid.Row="0"
+                        HorizontalAlignment="Center" VerticalAlignment="Center"
+                        Visibility="{Binding ShowEmpty, Converter={StaticResource BoolToVisibilityConverter}}">
+                <ui:SymbolIcon Symbol="Games48" FontSize="44"
+                               HorizontalAlignment="Center"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                <TextBlock Text="{Binding EmptyMessage}"
+                           FontSize="13" Margin="0,10,0,0" TextAlignment="Center"
                            Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-            <TextBlock Text="{Binding EmptyMessage}"
-                       FontSize="13" Margin="0,10,0,0" TextAlignment="Center"
-                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-            <ui:Button Content="重新加载" Command="{Binding RefreshCommand}"
-                       Margin="0,14,0,0" HorizontalAlignment="Center" />
-        </StackPanel>
+                <ui:Button Content="重新加载" Appearance="Secondary"
+                           Command="{Binding RefreshCommand}"
+                           Margin="0,14,0,0" HorizontalAlignment="Center" />
+            </StackPanel>
+        </Grid>
     </Grid>
 </UserControl>
