@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="SAM.WinUIApp.Views.Controls.GameLibraryView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="using:SAM.WinUIApp.ViewModels"
+    mc:Ignorable="d">
+
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Converters/Converters.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <!-- Fluent 2 游戏库重设计：
+         页头 Title + CommandBar；AutoSuggestBox 搜索 + 分段筛选；
+         列表从行布局改为 GridView 卡片网格（ItemsWrapGrid 虚拟化 + 容器实现时懒加载图标）。 -->
+    <Grid Margin="36,24,36,16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- 页头：标题 + 命令区 -->
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Text="游戏库" Style="{StaticResource TitleTextBlockStyle}" VerticalAlignment="Center" />
+
+            <CommandBar Grid.Column="1" Background="Transparent" DefaultLabelPosition="Right"
+                        VerticalAlignment="Center" IsOpen="False">
+                <AppBarButton Icon="People" Label="检测共享"
+                              Command="{Binding DetectFamilySharingCommand}"
+                              ToolTipService.ToolTip="重新检测所有游戏的家庭共享状态（Steam 会把游戏短暂标记为运行中，可能触发已安装游戏的更新检查）" />
+                <AppBarButton Icon="Refresh" Label="刷新"
+                              Command="{Binding RefreshCommand}"
+                              ToolTipService.ToolTip="刷新游戏库" />
+                <AppBarSeparator />
+                <AppBarButton Icon="Add" Label="添加"
+                              Command="{Binding AddGameCommand}"
+                              ToolTipService.ToolTip="手动添加游戏" />
+            </CommandBar>
+        </Grid>
+
+        <!-- 工具行：搜索（AutoSuggestBox）+ 分段筛选 -->
+        <Grid Grid.Row="1" Margin="0,20,0,12" ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" MinWidth="200" MaxWidth="420" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <AutoSuggestBox x:Name="SearchBox" PlaceholderText="搜索游戏..."
+                            QueryIcon="Find"
+                            Text="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+
+            <!-- 所有权筛选：全部 / 自购 / 家庭共享（与侧栏类型分类正交） -->
+            <Border Grid.Column="1" Style="{StaticResource SegmentedGroup}" VerticalAlignment="Center"
+                    ToolTipService.ToolTip="按所有权筛选">
+                <StackPanel Orientation="Horizontal">
+                    <RadioButton Style="{StaticResource SegmentedItem}" Content="全部" GroupName="OwnershipFilter"
+                                 IsChecked="{Binding OwnershipIsAll, Mode=TwoWay}" />
+                    <RadioButton Style="{StaticResource SegmentedItem}" Content="自购" GroupName="OwnershipFilter"
+                                 IsChecked="{Binding OwnershipIsOwned, Mode=TwoWay}" />
+                    <RadioButton Style="{StaticResource SegmentedItem}" Content="共享" GroupName="OwnershipFilter"
+                                 IsChecked="{Binding OwnershipIsShared, Mode=TwoWay}" />
+                </StackPanel>
+            </Border>
+
+            <!-- 安装状态筛选：全部 / 已下载 / 未下载 -->
+            <Border Grid.Column="2" Style="{StaticResource SegmentedGroup}" VerticalAlignment="Center"
+                    ToolTipService.ToolTip="按本机安装状态筛选">
+                <StackPanel Orientation="Horizontal">
+                    <RadioButton Style="{StaticResource SegmentedItem}" Content="全部" GroupName="InstallFilter"
+                                 IsChecked="{Binding InstallIsAll, Mode=TwoWay}" />
+                    <RadioButton Style="{StaticResource SegmentedItem}" Content="已下载" GroupName="InstallFilter"
+                                 IsChecked="{Binding InstallIsInstalled, Mode=TwoWay}" />
+                    <RadioButton Style="{StaticResource SegmentedItem}" Content="未下载" GroupName="InstallFilter"
+                                 IsChecked="{Binding InstallIsNotInstalled, Mode=TwoWay}" />
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <InfoBar Grid.Row="2" Margin="0,0,0,12"
+                 IsOpen="{Binding UsedFallback, Mode=TwoWay}"
+                 Title="游戏列表下载失败"
+                 Message="已回退到默认列表，请检查网络后刷新重试。"
+                 Severity="Warning" />
+
+        <!-- 游戏卡片网格 -->
+        <Grid Grid.Row="3">
+            <GridView x:Name="GameGrid"
+                      ItemsSource="{Binding Games}"
+                      SelectionMode="Single"
+                      IsItemClickEnabled="False"
+                      Padding="0"
+                      Background="Transparent"
+                      BorderThickness="0"
+                      DoubleTapped="OnGameGridDoubleTapped"
+                      KeyDown="OnGameGridKeyDown"
+                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                      ScrollViewer.HorizontalScrollMode="Disabled"
+                      ScrollViewer.VerticalScrollBarVisibility="Auto"
+                      ScrollViewer.IsVerticalRailEnabled="True">
+                <GridView.ItemContainerStyle>
+                    <Style TargetType="GridViewItem">
+                        <Setter Property="Margin" Value="0,0,12,12" />
+                        <Setter Property="Padding" Value="0" />
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                        <Setter Property="VerticalContentAlignment" Value="Stretch" />
+                        <Setter Property="MinWidth" Value="0" />
+                        <Setter Property="UseSystemFocusVisuals" Value="True" />
+                    </Style>
+                </GridView.ItemContainerStyle>
+                <GridView.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <ItemsWrapGrid Orientation="Horizontal" ItemWidth="232" />
+                    </ItemsPanelTemplate>
+                </GridView.ItemsPanel>
+                <GridView.ItemTemplate>
+                    <DataTemplate x:DataType="vm:GameItemViewModel">
+                        <Border Style="{StaticResource SurfaceCard}" Width="220" Padding="10"
+                                CornerRadius="{StaticResource CardRadius}">
+                            <StackPanel Spacing="8">
+                                <!-- 图标区：懒加载（容器实现时 Loading 事件触发） -->
+                                <Border Height="84" CornerRadius="6"
+                                        Background="{ThemeResource SubtleFillColorTertiaryBrush}">
+                                    <Image Source="{Binding Icon}" Stretch="Uniform" Margin="6"
+                                           Loading="OnCardImageLoading" />
+                                </Border>
+
+                                <!-- 名称（最多两行） -->
+                                <TextBlock Text="{Binding Name}" Style="{StaticResource BodyStrongTextBlockStyle}"
+                                           TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"
+                                           MinHeight="40" />
+
+                                <!-- 徽章行：家庭共享（唯一强调色）+ 已下载弱徽标 -->
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <Border Visibility="{Binding IsFamilyShared, Converter={StaticResource BoolToVisibilityConverter}}"
+                                            Background="{ThemeResource FamilySharedBackgroundBrush}"
+                                            BorderBrush="{ThemeResource FamilySharedBorderBrush}" BorderThickness="1"
+                                            CornerRadius="5" Padding="7,2"
+                                            ToolTipService.ToolTip="来自 Steam 家庭共享（所有者是家庭成员，非本人购买）">
+                                        <StackPanel Orientation="Horizontal" Spacing="5">
+                                            <FontIcon Glyph="&#xE716;" FontSize="12"
+                                                      Foreground="{ThemeResource FamilySharedTextBrush}" />
+                                            <TextBlock Text="共享" FontSize="11" FontWeight="SemiBold"
+                                                       Foreground="{ThemeResource FamilySharedTextBrush}" />
+                                        </StackPanel>
+                                    </Border>
+
+                                    <Border Visibility="{Binding IsInstalled, Converter={StaticResource BoolToVisibilityConverter}}"
+                                            Background="{ThemeResource SubtleFillColorTertiaryBrush}"
+                                            CornerRadius="4" Padding="7,2"
+                                            ToolTipService.ToolTip="已下载到本机（来自 Steam 库目录扫描）">
+                                        <StackPanel Orientation="Horizontal" Spacing="4">
+                                            <FontIcon Glyph="&#xE73E;" FontSize="11"
+                                                      Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                            <TextBlock Text="已下载" FontSize="11"
+                                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+
+                                <!-- 第三行：类型 + App ID（三级信息） -->
+                                <StackPanel Orientation="Horizontal" Spacing="6" Opacity="0.75">
+                                    <TextBlock Text="{Binding TypeLabel}" Style="{StaticResource CaptionTextBlockStyle}"
+                                               Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                                    <TextBlock Text="·" Style="{StaticResource CaptionTextBlockStyle}"
+                                               Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                                    <TextBlock Text="{Binding Subtitle}" Style="{StaticResource CaptionTextBlockStyle}"
+                                               Foreground="{ThemeResource TextFillColorTertiaryBrush}" TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </GridView.ItemTemplate>
+            </GridView>
+
+            <!-- 加载中 -->
+            <ProgressRing Grid.Row="0" IsIndeterminate="True"
+                          Width="36" Height="36"
+                          HorizontalAlignment="Center" VerticalAlignment="Center"
+                          Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}" />
+
+            <!-- 空状态 -->
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10"
+                        Visibility="{Binding ShowEmpty, Converter={StaticResource BoolToVisibilityConverter}}">
+                <FontIcon Glyph="&#xE7FC;" FontSize="44" HorizontalAlignment="Center"
+                          Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                <TextBlock Text="{Binding EmptyMessage}" Style="{StaticResource BodyTextBlockStyle}"
+                           TextAlignment="Center"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                <Button Content="重新加载" Command="{Binding RefreshCommand}" Margin="0,4,0,0"
+                        HorizontalAlignment="Center" />
+            </StackPanel>
+        </Grid>
+    </Grid>
+</UserControl>

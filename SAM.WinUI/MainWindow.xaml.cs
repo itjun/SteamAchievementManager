@@ -53,11 +53,71 @@ namespace SAM.WinUIApp
             this.ContentFrame.Navigate(typeof(GameLibraryPage), mainViewModel);
         }
 
-        /// <summary>导航选中：游戏库 / 设置（Phase 4 起侧栏分类项也走这里）。</summary>
+        /// <summary>接入游戏库：侧栏类型分类菜单（InfoBadge 计数）随库数据重建。</summary>
+        public void AttachLibrary(GameLibraryViewModel library)
+        {
+            library.CategoriesChanged += (_, _) => this.RebuildCategoryItems(library);
+            this.RebuildCategoryItems(library);
+        }
+
+        /// <summary>
+        /// 侧栏分类重建：全部分类 + 页脚设置。原生 NavigationView 支持
+        /// SelectedItem 双向选中（WPF-UI 需隧道事件 hack 的等价逻辑在此自然实现）。
+        /// </summary>
+        private void RebuildCategoryItems(GameLibraryViewModel library)
+        {
+            this.NavView.MenuItems.Clear();
+            foreach (var category in library.Categories)
+            {
+                var item = new NavigationViewItem()
+                {
+                    Content = category.Label,
+                    Tag = "category:" + category.Key,
+                    Icon = new FontIcon() { Glyph = CategoryGlyph(category.Key) },
+                    InfoBadge = category.Count > 0 ? new InfoBadge() { Value = category.Count } : null,
+                };
+                this.NavView.MenuItems.Add(item);
+            }
+
+            if (this.NavView.MenuItems.Count > 0)
+            {
+                this.NavView.SelectedItem = this.NavView.MenuItems[0];
+            }
+        }
+
+        private static string CategoryGlyph(string key) => key switch
+        {
+            "all" => "\uE8A9",      // ViewAll
+            "normal" => "\uE7FC",   // Library
+            "demo" => "\uE768",     // Play
+            "mod" => "\uE8EC",      // Tag
+            "junk" => "\uE71D",     // AllApps
+            _ => "\uE712",          // More
+        };
+
+        /// <summary>导航选中：类型分类（→游戏库页+筛选）/ 设置。</summary>
         private void OnNavigationSelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
         {
             if (args.SelectedItemContainer?.Tag is not string tag)
             {
+                return;
+            }
+
+            if (tag.StartsWith("category:", StringComparison.Ordinal) == true)
+            {
+                if (this.ContentFrame.CurrentSourcePageType != typeof(GameLibraryPage))
+                {
+                    this.ContentFrame.Navigate(typeof(GameLibraryPage), this._MainViewModel);
+                }
+
+                var key = tag["category:".Length..];
+                var library = this._MainViewModel.Library;
+                var category = library?.Categories.FirstOrDefault(candidate => candidate.Key == key);
+                if (library != null && category != null)
+                {
+                    library.SelectedCategory = category;
+                }
+
                 return;
             }
 

@@ -97,7 +97,23 @@ namespace SAM.WinUIApp
 
             this._GameService = new GameService(this._SteamService);
 
-            // Phase 4：组装游戏库 ViewModel（Fluent 2 重设计的库页）。
+            // 游戏库组装：worker/探测子进程 = SAM.Worker.exe；缓存目录 %LOCALAPPDATA%\SAM
+            //（SettingsService 已一次性迁移 SAM.Wpf 的 familysharing.json）。
+            var workerPath = System.IO.Path.Combine(AppContext.BaseDirectory, "SAM.Worker.exe");
+            var dataDirectory = System.IO.Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SAM");
+            var familySharing = new FamilySharingService(workerPath, dataDirectory);
+
+            var library = new GameLibraryViewModel(
+                this._SteamService,
+                this._GameService,
+                familySharing,
+                new InstalledGamesService(),
+                this._MainViewModel,
+                this._DialogService);
+            this._MainViewModel.Library = library;
+            this._MainViewModel.CurrentView = library;
+            mainWindow.AttachLibrary(library);
         }
 
         private void OnUnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)

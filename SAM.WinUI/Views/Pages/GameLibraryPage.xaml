@@ -5,13 +5,25 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:controls="using:SAM.WinUIApp.Views.Controls"
+    xmlns:views="using:SAM.WinUIApp.Views"
     mc:Ignorable="d">
 
-    <!-- Phase 3 占位：Phase 4 以 Fluent 2 重设计（GridView 卡片网格 + AutoSuggestBox + 徽章）填充。 -->
-    <Grid Padding="36,24,36,28">
-        <StackPanel Spacing="8">
-            <TextBlock Text="游戏库" Style="{StaticResource TitleTextBlockStyle}" />
-            <TextBlock Text="游戏库页将在 Phase 4 落地。" Style="{StaticResource SubtitleTextBlockStyle}" />
-        </StackPanel>
-    </Grid>
+    <!-- 库 ↔ 详情 统一内容区（MainViewModel.CurrentView + 模板选择器；WinUI 无隐式 DataTemplate） -->
+    <Page.Resources>
+        <DataTemplate x:Key="LibraryTemplate">
+            <controls:GameLibraryView />
+        </DataTemplate>
+        <DataTemplate x:Key="DetailTemplate">
+            <controls:GameDetailView />
+        </DataTemplate>
+        <views:ViewTemplateSelector x:Key="ViewSelector"
+                                    LibraryTemplate="{StaticResource LibraryTemplate}"
+                                    DetailTemplate="{StaticResource DetailTemplate}" />
+    </Page.Resources>
+
+    <ContentControl Content="{Binding CurrentView}"
+                    ContentTemplateSelector="{StaticResource ViewSelector}"
+                    HorizontalContentAlignment="Stretch"
+                    VerticalContentAlignment="Stretch" />
 </Page>

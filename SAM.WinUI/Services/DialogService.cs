@@ -25,11 +25,61 @@ using Microsoft.UI.Xaml.Controls;
 namespace SAM.WinUIApp.Services
 {
     /// <summary>
-    /// 对话框服务：统一 ContentDialog 外观（替代 WPF 版散落各处的 MessageBox）。
+    /// 对话框服务：统一 ContentDialog 外观（替代 WPF 版散落各处的 MessageBox，
+    /// AddGameWindow 并入为 PromptForAppIdAsync）。
     /// XamlRoot 取自主窗口（单窗口应用）。
     /// </summary>
     public sealed class DialogService
     {
+        /// <summary>手动添加游戏：输入 App ID（NumberBox 校验范围），取消返回 null。</summary>
+        public async Task<uint?> PromptForAppIdAsync()
+        {
+            var input = new NumberBox()
+            {
+                Header = "App ID",
+                PlaceholderText = "例如 440",
+                Minimum = 1,
+                Maximum = uint.MaxValue,
+                SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact,
+                Value = 0,
+            };
+
+            var dialog = new ContentDialog()
+            {
+                Title = "添加游戏",
+                Content = new StackPanel()
+                {
+                    Spacing = 8,
+                    Children =
+                    {
+                        new TextBlock()
+                        {
+                            Text = "输入你拥有的游戏 App ID（Steam 商店页地址里的数字）。",
+                            TextWrapping = Microsoft.UI.Xaml.TextWrapping.Wrap,
+                        },
+                        input,
+                    },
+                },
+                PrimaryButtonText = "添加",
+                CloseButtonText = "取消",
+                DefaultButton = ContentDialogButton.Primary,
+                XamlRoot = App.MainHost?.Content?.XamlRoot,
+            };
+
+            if (await dialog.ShowAsync() != ContentDialogResult.Primary)
+            {
+                return null;
+            }
+
+            if (input.Value < 1 || input.Value > uint.MaxValue)
+            {
+                await this.ShowErrorAsync("Steam 成就管理器", "App ID 无效。");
+                return null;
+            }
+
+            return (uint)input.Value;
+        }
+
         public async Task ShowErrorAsync(string title, string message)
         {
             var dialog = this.Create(title, message, closeText: "确定");
