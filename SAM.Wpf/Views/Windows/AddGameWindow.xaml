@@ -11,7 +11,7 @@
 
     <StackPanel Margin="24,20,24,20">
         <TextBlock Text="手动添加游戏"
-                   FontSize="18" FontWeight="SemiBold"
+                   FontSize="20" FontWeight="SemiBold"
                    Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
         <TextBlock Text="输入 App ID 直接显示该游戏（需要拥有该游戏）。刷新可恢复完整列表。"
                    FontSize="12" Margin="0,8,0,0" TextWrapping="Wrap"
@@ -28,8 +28,8 @@
                    Visibility="Collapsed" />
 
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
-            <ui:Button Content="取消" MinWidth="88" Click="OnCancelClick" />
-            <ui:Button Content="确定" MinWidth="88" Margin="8,0,0,0" Appearance="Primary" Click="OnOkClick" />
+            <ui:Button Content="取消" MinWidth="96" Appearance="Secondary" Click="OnCancelClick" />
+            <ui:Button Content="确定" MinWidth="96" Margin="8,0,0,0" Appearance="Primary" Click="OnOkClick" />
         </StackPanel>
     </StackPanel>
 </ui:FluentWindow>
