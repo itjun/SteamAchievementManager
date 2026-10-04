@@ -49,4 +49,11 @@
     <ProjectReference Include="..\SAM.Worker\SAM.Worker.csproj" ReferenceOutputAssembly="false" OutputItemType="Content" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <!-- WinUI 未打包发布的已知缺口：dotnet publish 不输出应用 PRI（XAML 资源索引），
+       缺它则所有 XAML InitializeComponent 抛 XamlParseException（build 输出有、publish 输出无）。 -->
+  <Target Name="CopyAppPriToPublishDirectory" AfterTargets="Publish"
+          Condition="Exists('$(OutDir)$(AssemblyName).pri')">
+    <Copy SourceFiles="$(OutDir)$(AssemblyName).pri" DestinationFolder="$(PublishDir)" />
+  </Target>
+
 </Project>
