@@ -340,7 +340,106 @@ SAM.API 保留（多目标 net48;net8.0-windows，net48 目标暂无消费者，
 
 - .NET SDK 10.0.401（可编译 net8.0；本机装有 .NET 8 桌面运行时 8.0.10）
 - VS 2026 Community MSBuild：`C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MSBuild.exe`
-- 构建命令：`MSBuild SAM.sln /restore /p:Configuration=Debug /p:Platform=x86`
+- 构建命令（WPF 时代，已被 §14 取代）：`MSBuild SAM.sln /restore /p:Configuration=Debug /p:Platform=x64`
 - 旧项目输出仍为 `bin\`（net48）；新项目输出在各自 `bin\x86\...`（net8），互不干扰
 - WPF-UI 4.3.0 + CommunityToolkit.Mvvm 8.4.2（NuGet 走 nuget.azure.cn 镜像）
 - 已知残留：`bin\Krypton.Toolkit.dll` 为旧实验遗留（未跟踪、无引用），可随时删除
+
+---
+
+# WinUI 3 + Fluent 2 重写（2026-10-04，接替 WPF 版）
+
+WPF 版（SAM.Wpf）已完成历史使命并**已从解决方案删除**（git 历史可恢复），
+由 `SAM.WinUI`（WinUI 3 / Windows App SDK 2.5.1）+ `SAM.Worker`（统计/探测子进程）接替。
+用户决策：① UI 按 Fluent 2 重新设计（非 1:1 移植）；② **放弃 x86，全链路 x64**。
+
+## 9. 新架构（x64）
+
+```
+SAM.sln（解决方案平台 x64，移除 x86）
+├── SAM.API     steamclient64.dll 直连（原 steamclient.dll 32 位）
+├── SAM.Core    UI 无关业务逻辑不变 + SteamProbes（探测逻辑自 UI 进程移入）
+├── SAM.Worker  新：控制台 exe，--stats-worker= / --probe-appctx= / --probe-familysharing=
+└── SAM.WinUI   新：WinUI 3 未打包 + 自包含 WinAppRuntime（WindowsPackageType=None）
+```
+
+- **worker 分拆**：WinUI 3 入口经 WASDK 引导后才有控制权、启动重，不宜自宿主；
+  `StatsClient(appId, workerPath)` 默认解析同目录 SAM.Worker.exe（WinUI 输出目录经
+  ProjectReference ReferenceOutputAssembly=false + OutputItemType=Content 自动随附）。
+- **部署**：未打包（免 MSIX 身份/虚拟化，子进程衍生与 LoadLibrary 均原生）。
+- 数据目录迁至 `%LOCALAPPDATA%\SAM\`（SettingsService 首启一次性迁移 SAM.Wpf 的
+  familysharing.json/settings.json——365 天 TTL 探测结果有副作用成本，不能丢）。
+
+## 10. x64 化关键坑（Phase 0 冒烟定案）
+
+- **`NativeGetISteamApps` 委托缺 ThisCall/self 首参**（SteamClient018.cs）：
+  x86 上 StdCall 栈布局与 ThisCall 栈参数恰好吻合而"碰巧能用"；x64 统一调用约定下
+  参数左移一位 → GetISteamApps 恒返回 NULL。全 API 审计仅此一处坏。
+- **Types 数据结构体 `Pack=1`**：x86 上与默认对齐布局恰好相同；x64 上指针/uint64
+  需自然对齐，Pack=1 读错偏移（CallbackMessage.ParamPointer、UserStatsReceived 等）。
+  已改默认对齐；Interfaces vtable 结构全为指针字段，不受影响。
+- **注册表双视图**：Steam（32 位）把 InstallPath 写在 WOW6432Node；x64 进程默认读
+  64 位视图。GetInstallPath 先读 64 视图再 Registry32 兜底（本机两视图都有值）。
+- 冒烟验证：`SAM.Worker --probe-familysharing=440` / `--probe-appctx=440` /
+  `echo '{"cmd":"get","id":1}' | SAM.Worker --stats-worker=440`（520 成就/758 统计，
+  schinese 本地化，与 WPF 时代基线一致）。
+
+## 11. WinUI 3 / WASDK 2.5 坑备忘（实测）
+
+- **`MicaBackdrop` 命名空间已移至 `Microsoft.UI.Xaml.Media`**（1.x 的
+  Microsoft.UI.Composition.SystemBackdrops 下不存在；官方迁移摘要未提）。
+- **WinUI 3 窗口默认透明**：Win11 靠 Mica 兜底；Win10（本机 19044）无 Mica 必须
+  代码给纯色主题背景（`SolidBackgroundFillColorBaseBrush`；注意 WPF-UI 的
+  `ApplicationBackgroundBrush` 键在 WinUI 不存在——资源键查找失败是静默异常退出）。
+- **`[ObservableProperty]` 分部属性**：WinRT 封送安全（MVVMTK0045）；生成器以
+  **LangVersion=preview** 为门槛（13.0 不触发生成）。
+- **WPF-UI 的 DynamicResource 同名画刷 → ThemeResource** 机械对应；自定义语义画刷
+  改 `ThemeDictionaries`（Light/Dark 两套），比事件改写干净。
+- **`ContentControl` + `DataTemplateSelector` 模板实例化的 UserControl 不建 UIA
+  自动化对等项**（内容区整棵 UIA 树缺失，键盘/自动化不可达），且 `{Binding Content}`
+  在 DataContext 晚于加载设置时对后续变更不稳定。库↔详情切换改为**双子视图直挂 +
+  Visibility/DataContext 代码切换**后两者皆愈。
+- **GridView 的 `DoubleTapped` 不触发**（单项单击选中正常）——改用 Fluent 原生
+  `IsItemClickEnabled + ItemClick` 单击导航；键盘路径 = UIA 选中 + SetFocus + Enter。
+- **`AppWindowClosingEventArgs` 无 GetDeferral**（仅 Cancel）——异步确认用
+  "先 Cancel → 确认后置跳过标志二次 Close"模式。
+- **CommandBar PrimaryCommands 只收 ICommandBarElement**：普通 ToggleButton 换
+  AppBarToggleButton。
+- MessageBox（WPF 同步）→ ContentDialog（仅异步）：TryConfirmLeave/GoBack/打开其他
+  游戏全链异步化；约 15 处收敛进 DialogService。
+- 图标懒加载弃 getter 副作用模式：GridView/Image 的 `Loading` 事件 →
+  `BeginLoadIcon()`；BitmapImage 必须在 UI 线程创建（DispatcherQueue.TryEnqueue）。
+- 验证方法论延续：UIA SelectionItemPattern（原生 WinUI 控件有完整模式）+ 截图；
+  PS 脚本注释纯 ASCII；SetForegroundWindow 前发一次 Alt 键夺前台权。
+
+## 12. Fluent 2 重设计要点（vs WPF 版）
+
+- 库页：72px 行列表 → **GridView 卡片网格**（220px 卡：圆角图标区/两行名/
+  徽章行/类型+AppID 三级文本），搜索 AutoSuggestBox，页头 CommandBar
+  （检测共享/刷新/添加），侧栏分类带 **InfoBadge 计数**（原生 SelectedItem 双向，
+  摆脱 WPF-UI 的 PreviewMouseLeftButtonDown 隧道 hack）。
+- 详情页：CommandBar 批量（全部解锁/锁定/反转）+ 分段 成就/统计 + 筛选分段 +
+  AutoSuggestBox；成就卡片行（56px 状态图标/名称/描述/解锁时间/CheckBox）；
+  统计 NumberBox（禁用态直到"启用统计编辑"）；底部操作栏（重置/未保存计数/
+  AccentButton 保存）。添加游戏并入 ContentDialog（NumberBox 输入）。
+- 主题：深/浅/跟随系统（root RequestedTheme + UISettings 系统监听 +
+  AppWindow.TitleBar 按钮配色手动维护）。
+
+## 13. 验证证据（真机 Win10 21H2 19044 / Steam 账号 76561198421450282）
+
+- 库：155 App 全量列出（分类计数与 WPF 基线一致），CDN 图标懒加载，
+  家庭共享橙色徽章/已下载徽标缓存回填正常（深浅两主题截图存档 .zcode\shots\）。
+- 详情：TF2(440) 520/520 成就 + 758 统计读取（schinese）；3DMark 交互路径
+  （UIA 选中 → Enter → 打开）验证；统计视图 NumberBox/Protected 列正常。
+- worker 生命周期：打开详情衍生 SAM.Worker → get 后存活（stdin 阻塞）→
+  UI 退出即自然退出（stdin 关闭），全程无需强杀。
+- **行为红线**：未对真实账号执行保存/重置到 Steam 服务器（保存路径为旧版语义
+  逐字移植 + 代码评审），家庭共享探测未批量触发（仅缓存回填）。
+
+## 14. 环境说明（WinUI 版）
+
+- 构建：`dotnet build SAM.sln -c Debug -p:Platform=x64`（Release 同理）；
+  VS 2026 MSBuild 兜底。WASDK 2.5.1（稳定通道；1.8 已停止服务）。
+- 运行：`SAM.WinUI\bin\x64\Debug\net8.0-windows10.0.22621.0\win-x64\SAM.WinUI.exe`
+  （自包含 WinAppRuntime，需 .NET 8 x64 桌面运行时；SAM.Worker.exe 同目录随附）。
+- 调试参数：`--theme=dark|light|system`、`--open-game=<appId>`（直达详情）。

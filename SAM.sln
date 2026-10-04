@@ -7,11 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SAM.API", "SAM.API\SAM.API.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SAM.Core", "SAM.Core\SAM.Core.csproj", "{CDF5CE24-BA59-4D03-B5B6-26C691A0D2C8}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SAM.Worker", "SAM.Worker\SAM.Worker.csproj", "{9C3A5D81-4B2E-4F7A-8C10-52D6E9B3A1F4}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SAM.WinUI", "SAM.WinUI\SAM.WinUI.csproj", "{5D8E2A47-9C61-4B3F-8E0D-71A4C9B8F266}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SAM.Wpf", "SAM.Wpf\SAM.Wpf.csproj", "{1D34433A-C567-452B-B423-172D9E23894A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -35,10 +31,6 @@ Global
 		{5D8E2A47-9C61-4B3F-8E0D-71A4C9B8F266}.Debug|x64.Build.0 = Debug|x64
 		{5D8E2A47-9C61-4B3F-8E0D-71A4C9B8F266}.Release|x64.ActiveCfg = Release|x64
 		{5D8E2A47-9C61-4B3F-8E0D-71A4C9B8F266}.Release|x64.Build.0 = Release|x64
-		{1D34433A-C567-452B-B423-172D9E23894A}.Debug|x64.ActiveCfg = Debug|x64
-		{1D34433A-C567-452B-B423-172D9E23894A}.Debug|x64.Build.0 = Debug|x64
-		{1D34433A-C567-452B-B423-172D9E23894A}.Release|x64.ActiveCfg = Release|x64
-		{1D34433A-C567-452B-B423-172D9E23894A}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
