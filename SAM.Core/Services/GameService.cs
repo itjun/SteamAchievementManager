@@ -187,10 +187,19 @@ namespace SAM.Core.Services
                 }
             }
 
-            if (searchText != null &&
-                info.Name.IndexOf(searchText, StringComparison.OrdinalIgnoreCase) < 0)
+            // 搜索同时匹配原名与本地化名（补中文名后两种输入都要能找到）。
+            if (searchText != null)
             {
-                return false;
+                bool matched = info.Name.IndexOf(searchText, StringComparison.OrdinalIgnoreCase) >= 0;
+                if (matched == false && info.LocalizedName != null)
+                {
+                    matched = info.LocalizedName.IndexOf(searchText, StringComparison.OrdinalIgnoreCase) >= 0;
+                }
+
+                if (matched == false)
+                {
+                    return false;
+                }
             }
 
             return true;

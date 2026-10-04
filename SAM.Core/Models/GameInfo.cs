@@ -46,10 +46,21 @@ namespace SAM.Core.Models
         /// <summary>显示名；Steam 未提供时回退为 "App {Id}"（与旧行为一致）。</summary>
         public string Name { get; private set; } = "";
 
+        /// <summary>本地化名（中文，商店接口）；null = 未获取或无本地化。</summary>
+        public string? LocalizedName { get; private set; }
+
+        /// <summary>卡片显示名：本地化优先，回退 Steam 原名。</summary>
+        public string DisplayName => this.LocalizedName ?? this.Name;
+
         /// <summary>设置原始名称；null 触发回退。</summary>
         public void SetName(string? name)
         {
             this.Name = name ?? "App " + this.Id.ToString(CultureInfo.InvariantCulture);
+        }
+
+        public void SetLocalizedName(string? name)
+        {
+            this.LocalizedName = name;
         }
     }
 }

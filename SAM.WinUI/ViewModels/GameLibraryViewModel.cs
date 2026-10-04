@@ -55,6 +55,7 @@ namespace SAM.WinUIApp.ViewModels
         private readonly GameService _GameService;
         private readonly FamilySharingService _FamilySharing;
         private readonly InstalledGamesService _InstalledGames;
+        private readonly LocalizedNameService _LocalizedNames;
         private readonly MainViewModel _Main;
         private readonly DialogService _Dialogs;
 
@@ -64,11 +65,14 @@ namespace SAM.WinUIApp.ViewModels
 
         private CancellationTokenSource? _ProbeCancellation;
 
+        private CancellationTokenSource? _LocalizeCancellation;
+
         public GameLibraryViewModel(
             SteamService steamService,
             GameService gameService,
             FamilySharingService familySharing,
             InstalledGamesService installedGames,
+            LocalizedNameService localizedNames,
             MainViewModel main,
             DialogService dialogs)
         {
@@ -76,6 +80,7 @@ namespace SAM.WinUIApp.ViewModels
             this._GameService = gameService;
             this._FamilySharing = familySharing;
             this._InstalledGames = installedGames;
+            this._LocalizedNames = localizedNames;
             this._Main = main;
             this._Dialogs = dialogs;
             this._Dispatcher = DispatcherQueue.GetForCurrentThread();
@@ -207,6 +212,9 @@ namespace SAM.WinUIApp.ViewModels
                     : sharedCount > 0
                         ? $"共 {this._AllGames.Count} 个游戏，其中 {sharedCount} 个家庭共享"
                         : $"共 {this._AllGames.Count} 个游戏";
+
+                // 中文名回填：缓存命中即时生效，未命中的限频逐个取（不打断列表交互）。
+                _ = this.LocalizeNamesAsync();
             }
             catch (Exception exception)
             {
@@ -445,6 +453,87 @@ namespace SAM.WinUIApp.ViewModels
             }
         }
 
+        /// <summary>
+        /// 后台补齐中文名：磁盘缓存命中的即时回填，未命中的经商店接口限频逐个取
+        /// （约 0.4s/个，154 个首启约 1 分钟，之后启动零请求）。名称即时刷新卡片；
+        /// 全部完成后 ApplyFilter 重排序（中文名的排序位次与英文不同）。
+        /// 刷新/手动添加会重启该过程（取消旧的）；搜索同时匹配中英文名。
+        /// </summary>
+        private async Task LocalizeNamesAsync()
+        {
+            this._LocalizeCancellation?.Cancel();
+            this._LocalizeCancellation?.Dispose();
+            this._LocalizeCancellation = new CancellationTokenSource();
+            var cancellationToken = this._LocalizeCancellation.Token;
+
+            var targets = this._AllGames
+                .Where(game => game.Game.LocalizedName == null)
+                .ToList();
+            if (targets.Count == 0)
+            {
+                return;
+            }
+
+            // 纯缓存回填不发请求，不展示进度（避免每次启动刷状态栏）。
+            var networkTargets = targets.Count(game => this._LocalizedNames.NeedsRequest(game.Id));
+            if (networkTargets > 0)
+            {
+                this._Main.StatusText = $"正在获取中文名称（0/{networkTargets}）...";
+            }
+
+            var byId = targets.ToDictionary(game => game.Id);
+            var doneNetwork = 0;
+            var changed = 0;
+            foreach (var game in targets)
+            {
+                bool needsNetwork = this._LocalizedNames.NeedsRequest(game.Id);
+                string? name = null;
+                try
+                {
+                    name = await this._LocalizedNames.GetAsync(game.Id, cancellationToken)
+                        .ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    return; // 新一轮回填接管。
+                }
+
+                if (needsNetwork == true)
+                {
+                    doneNetwork++;
+                }
+
+                if (string.IsNullOrEmpty(name) == false)
+                {
+                    changed++;
+                }
+
+                var done = doneNetwork;
+                this._Dispatcher.TryEnqueue(() =>
+                {
+                    if (name != null && byId.TryGetValue(game.Id, out var target) == true)
+                    {
+                        target.SetLocalizedName(name);
+                    }
+
+                    if (needsNetwork == true && (done % 10 == 0 || done == networkTargets))
+                    {
+                        this._Main.StatusText = $"正在获取中文名称（{done}/{networkTargets}）...";
+                    }
+                });
+            }
+
+            this._Dispatcher.TryEnqueue(() =>
+            {
+                if (changed > 0)
+                {
+                    // 中文名就位后重排序并刷新过滤（搜索/排序都吃 Name）。
+                    this.ApplyFilter();
+                    this._Main.StatusText = $"已补充 {changed} 个游戏的中文名称";
+                }
+            });
+        }
+
         /// <summary>双击/回车打开游戏 → 进入游戏详情（未保存更改确认走异步对话框）。</summary>
         [RelayCommand]
         private async Task OpenGameAsync(GameItemViewModel? item)
@@ -499,6 +588,7 @@ namespace SAM.WinUIApp.ViewModels
             this._Main.StatusText = $"正在显示单个游戏（App ID {id}），刷新可恢复完整列表";
             this.ApplyFamilySharingFromCache();
             this.ApplyInstalledFromScan();
+            _ = this.LocalizeNamesAsync();
         }
     }
 }

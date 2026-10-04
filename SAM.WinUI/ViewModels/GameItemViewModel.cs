@@ -48,7 +48,7 @@ namespace SAM.WinUIApp.ViewModels
             this.Game = game;
             this._GameService = gameService;
             this._Dispatcher = DispatcherQueue.GetForCurrentThread();
-            this.Name = game.Name;
+            this.Name = game.DisplayName;
         }
 
         public GameInfo Game { get; }
@@ -83,6 +83,21 @@ namespace SAM.WinUIApp.ViewModels
 
         [ObservableProperty]
         public partial string Name { get; set; }
+
+        /// <summary>Steam 原名（英文）；卡片 Tooltip 对照用——显示中文名时仍可查原名。</summary>
+        public string OriginalName => this.Game.Name;
+
+        /// <summary>本地化名回填（库后台任务）；INPC 即时刷新卡片。</summary>
+        public void SetLocalizedName(string? name)
+        {
+            if (string.IsNullOrEmpty(name) == true)
+            {
+                return;
+            }
+
+            this.Game.SetLocalizedName(name);
+            this.Name = name;
+        }
 
         public string TypeLabel => this.Game.Type switch
         {
@@ -146,11 +161,11 @@ namespace SAM.WinUIApp.ViewModels
             }
         }
 
-        /// <summary>App 元数据变更（回调 1001）：更新名称并重载图标。</summary>
+        /// <summary>App 元数据变更（回调 1001）：更新原名并重载图标；已获的本地化名保留。</summary>
         internal void RefreshData()
         {
-            this.Name = this._GameService.GetAppName(this.Id) ??
-                "App " + this.Id.ToString(CultureInfo.InvariantCulture);
+            this.Game.SetName(this._GameService.GetAppName(this.Id));
+            this.Name = this.Game.DisplayName;
 
             this.Icon = null;
             this._IconRequested = false;

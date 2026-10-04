@@ -138,10 +138,11 @@
                                     <Image Source="{Binding Icon}" Stretch="Uniform" Margin="6" />
                                 </Border>
 
-                                <!-- 名称（最多两行） -->
+                                <!-- 名称（最多两行）；Tooltip 保留英文原名对照（补中文名后便于辨认） -->
                                 <TextBlock Text="{Binding Name}" Style="{StaticResource BodyStrongTextBlockStyle}"
                                            TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"
-                                           MinHeight="40" />
+                                           MinHeight="40"
+                                           ToolTipService.ToolTip="{Binding OriginalName}" />
 
                                 <!-- 徽章行：家庭共享（唯一强调色）+ 已下载弱徽标
                                      （图标字号取规范档 16；芯片文字 ≥12px 最小可读） -->

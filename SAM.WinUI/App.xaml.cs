@@ -112,11 +112,18 @@ namespace SAM.WinUIApp
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SAM");
             var familySharing = new FamilySharingService(workerPath, dataDirectory);
 
+            // 中文名语言跟随 Steam 客户端（繁中用户取繁中），其余取简中。
+            var nameLanguage = this._SteamService.GetCurrentGameLanguage() == "tchinese"
+                ? "tchinese"
+                : "schinese";
+            var localizedNames = new LocalizedNameService(dataDirectory, nameLanguage);
+
             var library = new GameLibraryViewModel(
                 this._SteamService,
                 this._GameService,
                 familySharing,
                 new InstalledGamesService(),
+                localizedNames,
                 this._MainViewModel,
                 this._DialogService);
             this._MainViewModel.Library = library;
