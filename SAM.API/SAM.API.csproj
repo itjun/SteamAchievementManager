@@ -18,16 +18,12 @@
     <RepositoryType>Git</RepositoryType>
   </PropertyGroup>
   <PropertyGroup>
-    <!-- net48: 供旧 WinForms 项目 (SAM.Picker / SAM.Game) 使用；
-         net8.0-windows: 供新 SAM.Core / SAM.Wpf 使用。源代码零差异。 -->
+    <!-- net48 为历史保留目标（旧 WinForms 已删，现无消费者，源代码零差异）；
+         net8.0-windows: 供 SAM.Core / SAM.Worker / SAM.WinUI 使用。 -->
     <TargetFrameworks>net48;net8.0-windows</TargetFrameworks>
     <LangVersion>9.0</LangVersion>
-    <Platforms>x86</Platforms>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
+    <!-- x64：加载 Steam 自带的 steamclient64.dll（不再兼容 32 位系统）。 -->
+    <Platforms>x64</Platforms>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 </Project>

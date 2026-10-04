@@ -180,7 +180,10 @@ namespace SAM.API.Wrappers
         #endregion
 
         #region GetISteamApps
-        private delegate IntPtr NativeGetISteamApps(int user, int pipe, IntPtr version);
+        // 缺 ThisCall 特性与 self 首参时，x86 上 StdCall 的栈布局恰好与 ThisCall 的栈参数吻合
+        // 而碰巧可用；x64 统一调用约定下参数整体左移一位导致接口指针恒为 NULL，必须补齐。
+        [UnmanagedFunctionPointer(CallingConvention.ThisCall)]
+        private delegate IntPtr NativeGetISteamApps(IntPtr self, int user, int pipe, IntPtr version);
 
         private TClass GetISteamApps<TClass>(int user, int pipe, string version)
             where TClass : INativeWrapper, new()
@@ -189,6 +192,7 @@ namespace SAM.API.Wrappers
             {
                 IntPtr address = this.Call<IntPtr, NativeGetISteamApps>(
                     this.Functions.GetISteamApps,
+                    this.ObjectAddress,
                     user,
                     pipe,
                     nativeVersion.Handle);

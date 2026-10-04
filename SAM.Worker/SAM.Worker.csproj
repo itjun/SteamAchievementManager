@@ -1,10 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <AssemblyTitle>Steam Achievement Manager</AssemblyTitle>
+    <AssemblyTitle>Steam Achievement Manager Worker</AssemblyTitle>
     <Company>Gibbed</Company>
     <Authors>Gibbed</Authors>
-    <Description>Modern WPF client for the Steam Achievement Manager.</Description>
+    <Description>Steam statistics worker subprocess for the Steam Achievement Manager.</Description>
     <Copyright>Copyright © Gibbed 2019</Copyright>
   </PropertyGroup>
   <PropertyGroup>
@@ -17,28 +17,16 @@
     <RepositoryType>Git</RepositoryType>
   </PropertyGroup>
   <PropertyGroup>
-    <OutputType>WinExe</OutputType>
+    <OutputType>Exe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
-    <UseWPF>true</UseWPF>
-    <!-- 程序集名保持 SAM.Wpf（exe 名不变）；根命名空间避开 SAM.Wpf，
-         否则 SAM 作用域会把 Wpf.Ui.* 错误解析为 SAM.Wpf.Ui.*（命名空间遮蔽）。 -->
-    <RootNamespace>SAM.WpfApp</RootNamespace>
+    <RootNamespace>SAM.Worker</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <!-- x64：与全解决方案一致（steamclient64.dll）。 -->
     <Platforms>x64</Platforms>
-    <ApplicationIcon>Assets\SAM.ico</ApplicationIcon>
-    <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\SAM.Core\SAM.Core.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Assets\SAM.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="WPF-UI" Version="4.3.0" />
-    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
   </ItemGroup>
 
 </Project>

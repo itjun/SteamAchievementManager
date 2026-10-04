@@ -24,7 +24,7 @@ using System.Runtime.InteropServices;
 
 namespace SAM.API.Types
 {
-    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    [StructLayout(LayoutKind.Sequential)]
     public struct UserStatsStored
     {
         public ulong GameId;

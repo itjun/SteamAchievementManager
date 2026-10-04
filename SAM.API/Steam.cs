@@ -60,7 +60,24 @@ namespace SAM.API
 
         public static string GetInstallPath()
         {
-            return (string)Registry.GetValue(@"HKEY_LOCAL_MACHINE\Software\Valve\Steam", "InstallPath", null);
+            // Steam 客户端是 32 位程序，InstallPath 写在 WOW6432Node；
+            // 64 位进程默认读 64 位视图，两个视图都要尝试。
+            using (var baseKey = RegistryKey.OpenBaseKey(
+                RegistryHive.LocalMachine, RegistryView.Registry64))
+            {
+                using var key = baseKey.OpenSubKey(@"Software\Valve\Steam");
+                if (key?.GetValue("InstallPath") is string path64 && path64.Length > 0)
+                {
+                    return path64;
+                }
+            }
+
+            using (var baseKey32 = RegistryKey.OpenBaseKey(
+                RegistryHive.LocalMachine, RegistryView.Registry32))
+            {
+                using var key32 = baseKey32.OpenSubKey(@"Software\Valve\Steam");
+                return key32?.GetValue("InstallPath") as string;
+            }
         }
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
@@ -120,7 +137,8 @@ namespace SAM.API
 
             Native.SetDllDirectory(path + ";" + Path.Combine(path, "bin"));
 
-            path = Path.Combine(path, "steamclient.dll");
+            // 64 位进程加载 Steam 自带的 64 位 steamclient（不再兼容 x86）。
+            path = Path.Combine(path, "steamclient64.dll");
             IntPtr module = Native.LoadLibraryEx(path, IntPtr.Zero, Native.LoadWithAlteredSearchPath);
             if (module == IntPtr.Zero)
             {

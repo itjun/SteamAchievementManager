@@ -17,11 +17,11 @@
     <RepositoryType>Git</RepositoryType>
   </PropertyGroup>
   <PropertyGroup>
-    <!-- 不引用 WPF/WinForms；仅承载从 SAM.Picker / SAM.Game 抽出的业务逻辑。 -->
+    <!-- 不引用 WPF/WinUI；仅承载 UI 无关的业务逻辑。 -->
     <TargetFramework>net8.0-windows</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Platforms>x86</Platforms>
+    <Platforms>x64</Platforms>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\SAM.API\SAM.API.csproj" />
