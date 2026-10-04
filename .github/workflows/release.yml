@@ -1,0 +1,99 @@
+# 发版流程（Velopack + GitHub Releases，绿色便携版）：
+# 1. 改 SAM.WinUI/SAM.WinUI.csproj 的 <Version>（三段 SemVer，如 7.2.0）
+# 2. 若该版必须强制更新，把仓库根 update-policy.json 的 minimumRequired 改成该版本
+# 3. git tag v7.2.0 && git push origin v7.2.0 → 本 workflow 自动构建并发布 Release
+# 用户侧：下载便携 zip 解压到任意可写目录直接运行，支持原地自更新（不提供安装器）。
+# 预演（用户不感知）：Actions → Release → Run workflow 勾选 prerelease，
+#   客户端只认正式 Release（releases/latest），验证完可删掉 Release 与 tag 重发。
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      prerelease:
+        description: '标记为预发布（客户端不会检查到预发布版本）'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+env:
+  REPO_URL: https://github.com/itjun/SteamAchievementManager
+  # packId = 更新身份与包名（不能叫 SAM：与数据目录 %LOCALAPPDATA%\SAM 同名冲突）
+  PACK_ID: SteamAchievementManager
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # changelog 需要 tag 历史
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: 解析版本号（tag 优先，手动触发回退 csproj Version）
+        shell: pwsh
+        run: |
+          $version = $null
+          if ($env:GITHUB_REF -like 'refs/tags/v*') {
+            $version = $env:GITHUB_REF -replace '^refs/tags/v', ''
+          } else {
+            $csproj = Get-Content 'SAM.WinUI/SAM.WinUI.csproj' -Raw
+            if ($csproj -match '<Version>([\d\.]+(?:-[\w\.]+)?)</Version>') {
+              $version = $Matches[1]
+            }
+          }
+          if ($version -notmatch '^\d+\.\d+\.\d+(-[\w\.]+)?$') {
+            throw "版本号 '$version' 非法：须为三段 SemVer（tag 形如 v7.2.0）"
+          }
+          "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "TAG=v$version" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: 发布 self-contained x64（SAM.Worker 经 ProjectReference 随附）
+        run: dotnet publish SAM.WinUI/SAM.WinUI.csproj -c Release -p:Platform=x64 -r win-x64 --self-contained true -p:Version=$env:VERSION -o publish
+
+      - name: 安装 vpk
+        run: dotnet tool install -g vpk
+
+      - name: 拉取上一版资产（增量更新基线；首发或上一版无资产时允许失败）
+        run: vpk download github --repoUrl $env:REPO_URL --token ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+      - name: 打包（便携 zip + 全量/增量更新包；pdb 默认已剔除）
+        run: vpk pack -u $env:PACK_ID -v $env:VERSION -p publish --packTitle "Steam Achievement Manager" --mainExe SAM.WinUI.exe
+
+      - name: 生成 update-manifest.json（minimumRequired 来自仓库根 update-policy.json）
+        shell: pwsh
+        run: |
+          $policy = Get-Content 'update-policy.json' -Raw | ConvertFrom-Json
+          $previous = git describe --tags --abbrev=0 --match 'v*' "$env:TAG^" 2>$null
+          if (-not $previous) { $previous = (git rev-list --max-parents=0 HEAD)[0] }
+          $log = @(git log --no-merges --pretty=format:'- %s' "$previous..$env:TAG")
+          if ($log.Count -eq 0) { $log = @('- 更新说明见发布页面。') }
+          $manifest = [ordered]@{
+            version         = $env:VERSION
+            minimumRequired = [string]$policy.minimumRequired
+            notes           = ($log | Select-Object -First 40) -join "`n"
+            releaseUrl      = "$env:REPO_URL/releases/tag/$env:TAG"
+          }
+          $manifest | ConvertTo-Json | Out-File 'Releases/update-manifest.json' -Encoding utf8
+          Get-Content 'Releases/update-manifest.json'
+
+      - name: 上传 Release（便携 zip + 更新包 + update-manifest.json；撤下安装器走绿色版）
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          vpk upload github --repoUrl $env:REPO_URL --token ${{ secrets.GITHUB_TOKEN }} --publish --releaseName "SAM $env:VERSION" --tag $env:TAG
+          gh release delete-asset $env:TAG "$env:PACK_ID-win-Setup.exe" --yes
+          gh release upload $env:TAG 'Releases/update-manifest.json' --clobber
+          if ('${{ inputs.prerelease }}' -eq 'true') {
+            gh release edit $env:TAG --prerelease
+          }
