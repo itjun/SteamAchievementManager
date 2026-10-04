@@ -24,6 +24,8 @@
     <RootNamespace>SAM.WinUIApp</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <!-- C# 13：[ObservableProperty] 分部属性所需（WinUI 3 的 WinRT/AOT 安全写法）。 -->
+    <LangVersion>preview</LangVersion>
     <!-- x64：与全解决方案一致（steamclient64.dll）。 -->
     <Platforms>x64</Platforms>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>

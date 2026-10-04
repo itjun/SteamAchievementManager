@@ -20,44 +20,65 @@
  *    distribution.
  */
 
-// WASDK 2.x：Backdrop 类型已从 Microsoft.UI.Composition.SystemBackdrops
-// 移入 Microsoft.UI.Xaml.Media。
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Navigation;
+using SAM.WinUIApp.Services;
+using SAM.WinUIApp.ViewModels;
+using SAM.WinUIApp.Views.Pages;
 
 namespace SAM.WinUIApp
 {
     public sealed partial class MainWindow : Window
     {
-        public MainWindow()
+        private readonly MainViewModel _MainViewModel;
+        private readonly SettingsService _SettingsService;
+        private readonly ThemeService _ThemeService;
+
+        public MainWindow(MainViewModel mainViewModel, SettingsService settingsService, ThemeService themeService)
         {
+            this._MainViewModel = mainViewModel;
+            this._SettingsService = settingsService;
+            this._ThemeService = themeService;
+
             this.InitializeComponent();
 
             this.Title = "Steam 成就管理器";
             this.ExtendsContentIntoTitleBar = true;
 
-            // Mica 仅 Win11 (build 22000+) 生效；WinUI 3 窗口默认透明，
-            // Win10 回退为纯色主题背景（否则整窗透出桌面）。
-            if (Environment.OSVersion.Version.Build >= 22000)
-            {
-                this.SystemBackdrop = new MicaBackdrop();
-            }
-            else
-            {
-                this.RootGrid.Background = FindThemeBrush("SolidBackgroundFillColorBaseBrush")
-                    ?? FindThemeBrush("ApplicationPageBackgroundThemeBrush")
-                    ?? new SolidColorBrush(Microsoft.UI.Colors.LightGray);
-            }
+            // Window 不是 FrameworkElement，没有 DataContext：挂到根 Grid 供状态栏等绑定继承。
+            this.RootGrid.DataContext = mainViewModel;
+
+            // 初始页：游戏库。
+            this.ContentFrame.Navigate(typeof(GameLibraryPage), mainViewModel);
         }
-        private static Brush? FindThemeBrush(string key)
+
+        /// <summary>导航选中：游戏库 / 设置（Phase 4 起侧栏分类项也走这里）。</summary>
+        private void OnNavigationSelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
         {
-            if (Application.Current.Resources.TryGetValue(key, out var value) == true &&
-                value is Brush brush)
+            if (args.SelectedItemContainer?.Tag is not string tag)
             {
-                return brush;
+                return;
             }
 
-            return null;
+            switch (tag)
+            {
+                case "library":
+                    if (this.ContentFrame.CurrentSourcePageType != typeof(GameLibraryPage))
+                    {
+                        this.ContentFrame.Navigate(typeof(GameLibraryPage), this._MainViewModel);
+                    }
+
+                    break;
+
+                case "settings":
+                    if (this.ContentFrame.CurrentSourcePageType != typeof(SettingsPage))
+                    {
+                        this.ContentFrame.Navigate(typeof(SettingsPage), (this._SettingsService, this._ThemeService));
+                    }
+
+                    break;
+            }
         }
     }
 }

@@ -7,47 +7,70 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <!-- Fluent 2 外壳：左导航（无汉堡）、应用名在窗格头部、页脚设置项。
-         Win11 用 Mica（窗口保持透明分层）；Win10 由代码侧回退为纯色主题背景。 -->
+    <!-- Fluent 2 外壳：左导航（无汉堡）+ 底部状态栏（发丝线分层）。
+         Win11：NavigationView 透明背景让 Mica 贯通（WinUI 原生内容分层）；
+         Win10：ThemeService 给 RootGrid 纯色主题背景。 -->
     <Grid x:Name="RootGrid">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
         <NavigationView x:Name="NavView"
+            Grid.Row="0"
             IsPaneToggleButtonVisible="False"
             IsBackButtonVisible="Collapsed"
-            PaneDisplayMode="Left"
+            IsPaneOpen="True"
             OpenPaneLength="220"
-            IsSettingsVisible="False">
+            PaneDisplayMode="Left"
+            IsSettingsVisible="False"
+            Background="Transparent"
+            SelectionChanged="OnNavigationSelectionChanged">
 
-        <NavigationView.PaneHeader>
-            <TextBlock x:Name="PaneTitleText"
-                Text="Steam 成就管理器"
-                Margin="16,12,16,4"
-                FontFamily="Segoe UI Variable Display"
-                FontSize="14"
-                FontWeight="SemiBold" />
-        </NavigationView.PaneHeader>
+            <!-- 窗格头部：logo + 应用名（标题栏由 ExtendsContentIntoTitleBar 提供拖拽区） -->
+            <NavigationView.PaneHeader>
+                <StackPanel Orientation="Horizontal" Margin="16,12,16,14" Spacing="10">
+                    <Image Source="/Assets/SAM.ico" Width="22" Height="22" VerticalAlignment="Center" />
+                    <TextBlock Text="Steam 成就管理器"
+                               FontSize="14" FontWeight="SemiBold"
+                               VerticalAlignment="Center"
+                               Foreground="{ThemeResource TextFillColorPrimaryBrush}" />
+                </StackPanel>
+            </NavigationView.PaneHeader>
 
-        <NavigationView.MenuItems>
-            <NavigationViewItem Content="游戏库" IsSelected="True" Tag="library">
-                <NavigationViewItem.Icon>
-                    <FontIcon Glyph="&#xE7FC;" />
-                </NavigationViewItem.Icon>
-            </NavigationViewItem>
-        </NavigationView.MenuItems>
+            <!-- Phase 4：类型分类动态菜单项（InfoBadge 计数）由此生成 -->
+            <NavigationView.MenuItems>
+                <NavigationViewItem Content="游戏库" Tag="library" IsSelected="True">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE7FC;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+            </NavigationView.MenuItems>
 
-        <NavigationView.FooterMenuItems>
-            <NavigationViewItem Content="设置" Tag="settings">
-                <NavigationViewItem.Icon>
-                    <FontIcon Glyph="&#xE713;" />
-                </NavigationViewItem.Icon>
-            </NavigationViewItem>
-        </NavigationView.FooterMenuItems>
+            <NavigationView.FooterMenuItems>
+                <NavigationViewItem Content="设置" Tag="settings">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE713;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+            </NavigationView.FooterMenuItems>
 
-        <Grid Padding="36,28,36,28">
-            <StackPanel Spacing="8">
-                <TextBlock Text="SAM.WinUI" Style="{StaticResource TitleTextBlockStyle}" />
-                <TextBlock Text="脚手架验证窗口" Style="{StaticResource SubtitleTextBlockStyle}" />
-            </StackPanel>
-        </Grid>
+            <NavigationView.Content>
+                <Frame x:Name="ContentFrame" />
+            </NavigationView.Content>
         </NavigationView>
+
+        <!-- 底部状态栏 -->
+        <Border Grid.Row="1"
+                Height="32"
+                BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
+                BorderThickness="0,1,0,0">
+            <TextBlock Text="{Binding StatusText, FallbackValue=就绪}"
+                       Margin="16,0,16,0"
+                       VerticalAlignment="Center"
+                       FontSize="12"
+                       TextTrimming="CharacterEllipsis"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+        </Border>
     </Grid>
 </Window>
