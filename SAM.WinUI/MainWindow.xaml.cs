@@ -120,7 +120,7 @@ namespace SAM.WinUIApp
         private static string CategoryGlyph(string key) => key switch
         {
             "all" => "\uE8A9",      // ViewAll
-            "normal" => "\uE7FC",   // Library
+            "normal" => "\uE8F1",   // Library（MDL2 码位：E7FC 是 Segoe Fluent Icons/Win11 专属，Win10 无字形）
             "demo" => "\uE768",     // Play
             "mod" => "\uE8EC",      // Tag
             "junk" => "\uE71D",     // AllApps

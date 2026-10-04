@@ -496,3 +496,20 @@ SAM.sln（解决方案平台 x64，移除 x86）
 
 **复验（像素）**：--theme=dark 启动 pane=32/卡片=58；--theme=light pane=243/卡片=247；
 设置页运行时切换 pane=32/卡片=50——三路径全部正确。
+
+## 18. Fluent 2 全面复审（2026-10-04，frontend-design 流程）
+
+深色模式修复后重采 8 张取证（库/详情-成就/详情-统计/设置/空态 × 深浅），逐页核对
+字阶/圆角/图标/颜色/材质/间距/动效/可达性。结论与修复：
+
+- **图标码位坑（新发现）**：`E7FC`（Library）是 Segoe Fluent Icons（Win11）新增码位，
+  **Win10 的 Segoe MDL2 Assets 无此字形 → 静默空白**（无缺字框）。受影响：空态 48px
+  图标、侧栏"游戏"分类图标（自 Phase 4 起一直缺失）。改用 MDL2 码位 `E8F1` 后恢复。
+  **通用教训：Win10 兼容的图标只用 MDL2 时代码位；Segoe Fluent Icons 新码位在 Win10
+  上静默消失。** 判别法：同字体下其他图标渲染、唯独某码位空白 = 码位不在 MDL2。
+- **返回按钮无 UIA 名称**（纯图标 Button）→ `AutomationProperties.Name="返回游戏库"`。
+- **入场动效未尊重"减少动画"** → PlayEntrance 前检查 `UISettings.AnimationsEnabled`。
+- 复审通过项：字阶全走 XAML type ramp；圆角 4px 全一致；CommandBar 图标+标签双通道；
+  空态文案+重试操作；选中段 accent 填充双主题醒目；详情页三段式信息层级
+  （名称/描述 Caption/解锁时间三级色）；底部操作栏 LayerFillColor 分层；统计
+  NumberBox 禁用态语义明确。

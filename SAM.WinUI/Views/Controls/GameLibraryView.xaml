@@ -193,10 +193,12 @@
                           HorizontalAlignment="Center" VerticalAlignment="Center"
                           Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}" />
 
-            <!-- 空状态（图标取规范档 48px） -->
+            <!-- 空状态（图标取规范档 48px；显式尺寸/字体防塌陷） -->
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10"
                         Visibility="{Binding ShowEmpty, Converter={StaticResource BoolToVisibilityConverter}}">
-                <FontIcon Glyph="&#xE7FC;" FontSize="48" HorizontalAlignment="Center"
+                <FontIcon Glyph="&#xE8F1;" FontSize="48" Width="48" Height="48"
+                          FontFamily="{ThemeResource SymbolThemeFontFamily}"
+                          HorizontalAlignment="Center"
                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                 <TextBlock Text="{Binding EmptyMessage}" Style="{StaticResource BodyTextBlockStyle}"
                            TextAlignment="Center"

@@ -35,6 +35,7 @@
             </Grid.ColumnDefinitions>
 
             <Button Grid.Column="0" Command="{Binding GoBackCommand}"
+                    AutomationProperties.Name="返回游戏库"
                     ToolTipService.ToolTip="返回游戏库" VerticalAlignment="Center">
                 <FontIcon Glyph="&#xE76B;" />
             </Button>

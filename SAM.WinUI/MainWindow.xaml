@@ -44,7 +44,7 @@
             <NavigationView.MenuItems>
                 <NavigationViewItem Content="游戏库" Tag="library" IsSelected="True">
                     <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE7FC;" />
+                        <FontIcon Glyph="&#xE8F1;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
             </NavigationView.MenuItems>

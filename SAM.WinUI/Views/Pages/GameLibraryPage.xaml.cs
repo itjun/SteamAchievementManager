@@ -98,11 +98,18 @@ namespace SAM.WinUIApp.Views.Pages
             inactive.Visibility = Visibility.Collapsed;
         }
 
-        /// <summary>Fluent 入场动效：淡入 + 24px 上移（约 250ms，标准缓动）。</summary>
+        /// <summary>Fluent 入场动效：淡入 + 24px 上移（约 250ms，标准缓动）。
+        /// 系统关闭动画（辅助功能"减少动画"）时跳过，尊重无障碍偏好。</summary>
         private void PlayEntrance(UIElement element)
         {
             try
             {
+                var uiSettings = new Windows.UI.ViewManagement.UISettings();
+                if (uiSettings.AnimationsEnabled == false)
+                {
+                    return;
+                }
+
                 var visual = ElementCompositionPreview.GetElementVisual(element);
                 var compositor = visual.Compositor;
                 var easing = compositor.CreateCubicBezierEasingFunction(
