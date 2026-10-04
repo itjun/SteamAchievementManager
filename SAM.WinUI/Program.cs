@@ -20,27 +20,34 @@
  *    distribution.
  */
 
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Navigation;
-using SAM.WinUIApp.Services;
-using SAM.WinUIApp.ViewModels;
+using Microsoft.UI.Dispatching;
+using Microsoft.UI.Xaml;
+using Microsoft.Windows.AppLifecycle;
+using Velopack;
+using WinRT;
 
-namespace SAM.WinUIApp.Views.Pages
+namespace SAM.WinUIApp
 {
-    public sealed partial class SettingsPage : Page
+    /// <summary>
+    /// 自定义入口（csproj DisableXamlGeneratedMain）：Velopack 钩子必须最先于
+    /// Main 执行（安装/更新/卸载短命令与启动时应用待更新包），其余按
+    /// WinUI 3 未打包应用的标准引导（等价 XAML 生成版 Main）。
+    /// </summary>
+    public static class Program
     {
-        public SettingsPage()
+        [STAThread]
+        static void Main()
         {
-            this.InitializeComponent();
-        }
+            VelopackApp.Build().Run();
 
-        protected override void OnNavigatedTo(NavigationEventArgs e)
-        {
-            base.OnNavigatedTo(e);
-            if (e.Parameter is (SettingsService settings, ThemeService theme, UpdateService updates))
+            ComWrappersSupport.InitializeComWrappers();
+            Application.Start(p =>
             {
-                this.DataContext = new SettingsViewModel(settings, theme, updates);
-            }
+                var context = new DispatcherQueueSynchronizationContext(
+                    DispatcherQueue.GetForCurrentThread());
+                SynchronizationContext.SetSynchronizationContext(context);
+                _ = new App();
+            });
         }
     }
 }

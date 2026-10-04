@@ -32,5 +32,10 @@ namespace SAM.WinUIApp.Models
     public sealed class AppSettings
     {
         public ThemeMode Theme { get; set; } = ThemeMode.System;
+
+        /// <summary>启动时后台检查更新（有更新弹窗询问，从不静默安装）。</summary>
+        public bool AutoCheckUpdate { get; set; } = true;
+
+        public DateTime? LastUpdateCheckUtc { get; set; }
     }
 }

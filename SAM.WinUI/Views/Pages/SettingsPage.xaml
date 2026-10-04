@@ -44,16 +44,59 @@
                 </Grid>
             </Border>
 
+            <!-- 更新 -->
+            <TextBlock Text="更新" Style="{StaticResource SubtitleTextBlockStyle}" Margin="0,24,0,8" />
+
+            <Border Style="{StaticResource SurfaceCard}" Padding="18,14,18,16">
+                <StackPanel Spacing="12">
+
+                    <Grid ColumnSpacing="16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel VerticalAlignment="Center" Spacing="4">
+                            <TextBlock Text="自动检查更新" Style="{StaticResource BodyTextBlockStyle}" />
+                            <TextBlock Text="启动时在后台检查新版本，有更新时弹窗询问。"
+                                       Style="{StaticResource CaptionTextBlockStyle}"
+                                       TextWrapping="Wrap" Margin="0,0,24,0" />
+                        </StackPanel>
+
+                        <ToggleSwitch Grid.Column="1" IsOn="{Binding AutoCheckUpdate, Mode=TwoWay}"
+                                      OnContent="" OffContent="" VerticalAlignment="Center" />
+                    </Grid>
+
+                    <Grid ColumnSpacing="16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel VerticalAlignment="Center" Spacing="4">
+                            <TextBlock Text="手动检查" Style="{StaticResource BodyTextBlockStyle}" />
+                            <TextBlock Text="{Binding LastCheckText}" Style="{StaticResource CaptionTextBlockStyle}" />
+                            <TextBlock Text="{Binding UpdateStatusText}" Style="{StaticResource CaptionTextBlockStyle}"
+                                       TextWrapping="Wrap" Margin="0,0,24,0" />
+                        </StackPanel>
+
+                        <Button Grid.Column="1" Content="检查更新" MinWidth="108" VerticalAlignment="Center"
+                                Command="{Binding CheckUpdateCommand}" />
+                    </Grid>
+
+                </StackPanel>
+            </Border>
+
             <!-- 关于 -->
             <TextBlock Text="关于" Style="{StaticResource SubtitleTextBlockStyle}" Margin="0,24,0,8" />
 
             <Border Style="{StaticResource SurfaceCard}" Padding="18,14,18,16">
                 <StackPanel Spacing="6">
                     <TextBlock Text="Steam 成就管理器（WinUI 版）" Style="{StaticResource BodyTextBlockStyle}" />
-                    <TextBlock Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap">
-                        <Run Text="版本 7.1.0 · 基于 .NET 8 + WinUI 3 / Windows App SDK（Fluent 2）"/><LineBreak/>
-                        <Run Text="统计与探测子进程：SAM.Worker；Steam 互操作：steamclient64.dll（x64）。"/>
-                    </TextBlock>
+                    <TextBlock Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap"
+                               Text="{Binding VersionLine}" />
+                    <TextBlock Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap"
+                               Text="统计与探测子进程：SAM.Worker；Steam 互操作：steamclient64.dll（x64）。" />
                 </StackPanel>
             </Border>
 

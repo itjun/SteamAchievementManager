@@ -39,11 +39,13 @@ namespace SAM.WinUIApp
         private SettingsService _SettingsService = null!;
         private ThemeService _ThemeService = null!;
         private DialogService _DialogService = null!;
+        private UpdateService _UpdateService = null!;
         private SteamService _SteamService = null!;
         private GameService? _GameService;
         private MainViewModel _MainViewModel = null!;
 
         private DispatcherQueueTimer? _CallbackTimer;
+        private bool _CleanedUp;
 
         public App()
         {
@@ -60,6 +62,7 @@ namespace SAM.WinUIApp
             this._SettingsService = new SettingsService();
             this._ThemeService = new ThemeService();
             this._DialogService = new DialogService();
+            this._UpdateService = new UpdateService();
             this._MainViewModel = new MainViewModel();
 
             var theme = this._SettingsService.Settings.Theme;
@@ -74,10 +77,15 @@ namespace SAM.WinUIApp
                 }
             }
 
-            var mainWindow = new MainWindow(this._MainViewModel, this._SettingsService, this._ThemeService);
+            var mainWindow = new MainWindow(
+                this._MainViewModel, this._SettingsService, this._ThemeService, this._UpdateService);
             MainHost = mainWindow;
             this._ThemeService.Apply(theme, mainWindow);
             mainWindow.Activate();
+
+            // 更新检查放在 Steam 初始化前启动：初始化失败的早退路径也能弹出
+            // 强制更新（与错误对话框的冲突由 ShowWithRetryAsync 兜底）。
+            _ = this.RunStartupUpdateCheckAsync();
 
             // 初始化 Steam（Picker 模式 appId=0）。
             this._SteamService = new SteamService();
@@ -151,8 +159,48 @@ namespace SAM.WinUIApp
             e.Handled = true;
         }
 
-        private void OnProcessExit(object? sender, EventArgs e)
+        /// <summary>
+        /// 启动后台更新检查：延迟启动避让首屏，失败静默（更新检查绝不影响主功能）。
+        /// </summary>
+        private async Task RunStartupUpdateCheckAsync()
         {
+            try
+            {
+                await Task.Delay(TimeSpan.FromSeconds(3));
+
+                if (this._SettingsService.Settings.AutoCheckUpdate == false)
+                {
+                    return;
+                }
+
+                var result = await this._UpdateService.CheckAsync();
+                this._SettingsService.Settings.LastUpdateCheckUtc = DateTime.UtcNow;
+                this._SettingsService.Save();
+
+                if (result.Status == UpdateStatus.Available)
+                {
+                    await UpdateDialog.ShowWithRetryAsync(this._UpdateService, result);
+                }
+            }
+            catch
+            {
+                // 网络/对话框异常均静默（手动检查入口在设置页）。
+            }
+        }
+
+        /// <summary>
+        /// 更新重启与强制退出的统一清理：进程级退出事件（ProcessExit）在硬退出
+        /// 时不保证触发，应用前须先同步回收（统计 Worker 子进程、Steam 互操作）。
+        /// </summary>
+        internal void PrepareForUpdateExit()
+        {
+            if (this._CleanedUp == true)
+            {
+                return;
+            }
+
+            this._CleanedUp = true;
+
             // 兜底清理：详情页统计子进程随 StatsClient.Dispose 终止。
             if (this._MainViewModel?.CurrentView is IDisposable disposable)
             {
@@ -161,6 +209,11 @@ namespace SAM.WinUIApp
 
             this._CallbackTimer?.Stop();
             this._SteamService?.Dispose();
+        }
+
+        private void OnProcessExit(object? sender, EventArgs e)
+        {
+            this.PrepareForUpdateExit();
         }
 
         internal static string DescribeInitFailure(SteamInitResult result) => result.Failure switch

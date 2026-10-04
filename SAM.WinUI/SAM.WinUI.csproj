@@ -35,6 +35,10 @@
     <WindowsPackageType>None</WindowsPackageType>
     <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
     <ApplicationIcon>Assets\SAM.ico</ApplicationIcon>
+    <!-- Velopack 自动更新要求 Main 第一行执行钩子，入口由 Program.cs 接管。
+         WASDK 2.x 需显式定义编译符号才不生成默认 Main（属性只关引导，不关 #if）。 -->
+    <DisableXamlGeneratedMain>true</DisableXamlGeneratedMain>
+    <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Content Include="Assets\SAM.ico" CopyToOutputDirectory="PreserveNewest" />
@@ -42,6 +46,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.5.1" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="Velopack" Version="1.2.161" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\SAM.Core\SAM.Core.csproj" />

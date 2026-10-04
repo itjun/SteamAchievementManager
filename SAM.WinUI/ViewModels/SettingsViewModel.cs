@@ -23,6 +23,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using SAM.WinUIApp.Models;
 using SAM.WinUIApp.Services;
 
@@ -45,6 +46,7 @@ namespace SAM.WinUIApp.ViewModels
     {
         private readonly SettingsService _SettingsService;
         private readonly ThemeService _ThemeService;
+        private readonly UpdateService _UpdateService;
 
         public IReadOnlyList<ThemeOption> ThemeOptions { get; } = new[]
         {
@@ -56,14 +58,82 @@ namespace SAM.WinUIApp.ViewModels
         [ObservableProperty]
         public partial ThemeOption? SelectedThemeOption { get; set; }
 
-        public SettingsViewModel(SettingsService settingsService, ThemeService themeService)
+        public string VersionLine =>
+            $"版本 {UpdateService.CurrentVersion} · 基于 .NET 8 + WinUI 3 / Windows App SDK（Fluent 2）";
+
+        [ObservableProperty]
+        public partial bool IsCheckingUpdate { get; set; }
+
+        [ObservableProperty]
+        public partial string UpdateStatusText { get; set; } = "";
+
+        [ObservableProperty]
+        public partial string LastCheckText { get; set; } = "";
+
+        [ObservableProperty]
+        public partial bool AutoCheckUpdate { get; set; }
+
+        public SettingsViewModel(SettingsService settingsService, ThemeService themeService, UpdateService updateService)
         {
             this._SettingsService = settingsService;
             this._ThemeService = themeService;
+            this._UpdateService = updateService;
 
             this.SelectedThemeOption = this.ThemeOptions.FirstOrDefault(
                 option => option.Mode == settingsService.Settings.Theme) ?? this.ThemeOptions[0];
+            this.AutoCheckUpdate = settingsService.Settings.AutoCheckUpdate;
+            this.LastCheckText = FormatLastCheck(settingsService.Settings.LastUpdateCheckUtc);
         }
+
+        [RelayCommand]
+        private async Task CheckUpdateAsync()
+        {
+            if (this.IsCheckingUpdate == true)
+            {
+                return;
+            }
+
+            this.IsCheckingUpdate = true;
+            this.UpdateStatusText = "正在检查更新…";
+            try
+            {
+                var result = await this._UpdateService.CheckAsync();
+                this._SettingsService.Settings.LastUpdateCheckUtc = DateTime.UtcNow;
+                this._SettingsService.Save();
+                this.LastCheckText = FormatLastCheck(this._SettingsService.Settings.LastUpdateCheckUtc);
+
+                switch (result.Status)
+                {
+                    case UpdateStatus.Available:
+                        this.UpdateStatusText = $"已发现新版本 {result.NewVersion}。";
+                        await UpdateDialog.ShowWithRetryAsync(this._UpdateService, result);
+                        break;
+                    case UpdateStatus.NotInstalled:
+                        this.UpdateStatusText = "当前为开发模式运行（未从发布包启动），无法检查更新。";
+                        break;
+                    case UpdateStatus.Failed:
+                        this.UpdateStatusText = $"检查更新失败：{result.ErrorMessage}";
+                        break;
+                    default:
+                        this.UpdateStatusText = $"已是最新版本（{UpdateService.CurrentVersion}）。";
+                        break;
+                }
+            }
+            finally
+            {
+                this.IsCheckingUpdate = false;
+            }
+        }
+
+        partial void OnAutoCheckUpdateChanged(bool value)
+        {
+            this._SettingsService.Settings.AutoCheckUpdate = value;
+            this._SettingsService.Save();
+        }
+
+        private static string FormatLastCheck(DateTime? utc) => utc == null
+            ? "尚未检查过更新"
+            : $"上次检查：{utc.Value.ToLocalTime():yyyy-MM-dd HH:mm}";
 
         /// <summary>设置页分段控件绑定：选中段返回 true；置 true 切换主题（互斥由 RadioButton 分组保证）。</summary>
         public bool IsSystemTheme

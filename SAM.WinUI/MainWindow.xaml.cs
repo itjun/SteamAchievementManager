@@ -35,12 +35,18 @@ namespace SAM.WinUIApp
         private readonly MainViewModel _MainViewModel;
         private readonly SettingsService _SettingsService;
         private readonly ThemeService _ThemeService;
+        private readonly UpdateService _UpdateService;
 
-        public MainWindow(MainViewModel mainViewModel, SettingsService settingsService, ThemeService themeService)
+        public MainWindow(
+            MainViewModel mainViewModel,
+            SettingsService settingsService,
+            ThemeService themeService,
+            UpdateService updateService)
         {
             this._MainViewModel = mainViewModel;
             this._SettingsService = settingsService;
             this._ThemeService = themeService;
+            this._UpdateService = updateService;
 
             this.InitializeComponent();
 
@@ -166,7 +172,8 @@ namespace SAM.WinUIApp
                 case "settings":
                     if (this.ContentFrame.CurrentSourcePageType != typeof(SettingsPage))
                     {
-                        this.ContentFrame.Navigate(typeof(SettingsPage), (this._SettingsService, this._ThemeService));
+                        this.ContentFrame.Navigate(
+                            typeof(SettingsPage), (this._SettingsService, this._ThemeService, this._UpdateService));
                     }
 
                     break;
