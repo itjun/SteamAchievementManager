@@ -22,13 +22,14 @@
 
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Text;
 using System.Text.Json;
 
 namespace SAM.Core.GameStats
 {
     /// <summary>
-    /// 主进程侧的统计客户端：以 --stats-worker={appId} 启动自身副本（隐藏），
+    /// 主进程侧的统计客户端：以 --stats-worker={appId} 启动 SAM.Worker 子进程（隐藏），
     /// 通过 JSON-lines 发送请求。每个游戏一个实例，离开游戏详情时 Dispose。
     /// </summary>
     public sealed class StatsClient : IDisposable
@@ -41,10 +42,11 @@ namespace SAM.Core.GameStats
         private readonly SemaphoreSlim _Lock = new(1, 1);
         private int _NextId;
 
-        public StatsClient(long appId)
+        public StatsClient(long appId, string? workerPath = null)
         {
-            var exePath = Environment.ProcessPath
-                ?? throw new InvalidOperationException("无法定位当前进程的可执行文件路径。");
+            var exePath = workerPath
+                ?? ResolveWorkerPath()
+                ?? throw new InvalidOperationException("无法定位统计工作进程可执行文件。");
 
             var info = new ProcessStartInfo(
                 exePath,
@@ -66,6 +68,21 @@ namespace SAM.Core.GameStats
 
             this._Reader = this._Process.StandardOutput;
             this._Writer = this._Process.StandardInput;
+        }
+
+        /// <summary>
+        /// 解析 worker 可执行文件：首选同目录 SAM.Worker.exe（新架构独立宿主）；
+        /// 缺失时回退自身副本（旧自宿主布局，过渡期 SAM.Wpf 仍走此路径）。
+        /// </summary>
+        private static string? ResolveWorkerPath()
+        {
+            var candidate = Path.Combine(AppContext.BaseDirectory, "SAM.Worker.exe");
+            if (File.Exists(candidate) == true)
+            {
+                return candidate;
+            }
+
+            return Environment.ProcessPath;
         }
 
         public Task<WorkerResponse> GetAsync(CancellationToken cancellationToken = default)
