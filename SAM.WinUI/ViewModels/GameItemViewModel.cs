@@ -126,10 +126,18 @@ namespace SAM.WinUIApp.ViewModels
                     return;
                 }
 
-                // BitmapImage 是 DependencyObject，必须在 UI 线程创建后通知绑定。
-                this._Dispatcher.TryEnqueue(() =>
+                // BitmapImage/SetSourceAsync 都须在 UI 线程：EnqueueAsync 后 await，
+                // 严禁同步阻塞等 SetSourceAsync（XAML 完成回调需要 UI 线程 → 死锁；
+                // 内存流碰巧同步完成时才不触发，不可依赖）。
+                await this._Dispatcher.EnqueueActionAsync(async () =>
                 {
-                    this.Icon = CreateBitmap(bytes);
+                    var image = new BitmapImage();
+                    using (var stream = new MemoryStream(bytes).AsRandomAccessStream())
+                    {
+                        await image.SetSourceAsync(stream);
+                    }
+
+                    this.Icon = image;
                 });
             }
             catch
@@ -146,17 +154,6 @@ namespace SAM.WinUIApp.ViewModels
 
             this.Icon = null;
             this._IconRequested = false;
-        }
-
-        internal static BitmapImage CreateBitmap(byte[] bytes)
-        {
-            var image = new BitmapImage();
-            using (var stream = new MemoryStream(bytes).AsRandomAccessStream())
-            {
-                image.SetSourceAsync(stream).AsTask().GetAwaiter().GetResult();
-            }
-
-            return image;
         }
     }
 }

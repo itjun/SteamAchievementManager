@@ -20,6 +20,7 @@
  *    distribution.
  */
 
+using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml.Media.Imaging;
@@ -120,9 +121,16 @@ namespace SAM.WinUIApp.ViewModels
                     return;
                 }
 
-                this._Dispatcher.TryEnqueue(() =>
+                // UI 线程流式解码（严禁同步阻塞等 SetSourceAsync，同 GameItemViewModel）。
+                await this._Dispatcher.EnqueueActionAsync(async () =>
                 {
-                    this.Icon = GameItemViewModel.CreateBitmap(bytes);
+                    var image = new BitmapImage();
+                    using (var stream = new MemoryStream(bytes).AsRandomAccessStream())
+                    {
+                        await image.SetSourceAsync(stream);
+                    }
+
+                    this.Icon = image;
                 });
             }
             catch

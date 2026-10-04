@@ -463,3 +463,14 @@ SAM.sln（解决方案平台 x64，移除 x86）
 | 键盘/焦点 | 系统焦点视觉 | ✅ 回车路径 + UseSystemFocusVisuals |
 
 复验：浅/深双主题截图（audit-*.png），库页 4px 卡片、16px 芯片图标、详情页/返回路径（含动效）双向正常。
+
+## 16. 图标链路两连坑（2026-10-04，"封面不显示"排查）
+
+- **`Image.Loading` 触发时 DataContext 尚未继承就绪**：模板内 `sender.DataContext as ItemVM`
+  得 null → `BeginLoadIcon` 从未执行（156 次 Loading、0 次 URL 查询）。此前能显示是
+  布局时序碰巧（芯片尺寸变化后翻转）。正解 = **`ListViewBase.ContainerContentChanging`**
+  （`e.Item` 直接给数据项，WinUI 为虚拟化内容设计的事件；`InRecycleQueue==false` 判实现）。
+- **同步阻塞 `BitmapImage.SetSourceAsync`（`.GetResult()`）死锁**：XAML 完成回调需要
+  UI 线程；内存流碰巧同步完成时不触发。正解 = `DispatcherQueue` 上可等待封装
+  （DispatcherQueueAsync.EnqueueActionAsync，TryEnqueue+TCS）后 `await SetSourceAsync`。
+  另：WASDK 2.5 无内建 `DispatcherQueue.EnqueueAsync` 扩展，故自封装。

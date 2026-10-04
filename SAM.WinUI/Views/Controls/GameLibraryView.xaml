@@ -131,11 +131,11 @@
                         <Border Style="{StaticResource SurfaceCard}" Width="220" Padding="10"
                                 CornerRadius="{StaticResource CardRadius}">
                             <StackPanel Spacing="8">
-                                <!-- 图标区：懒加载（容器实现时 Loading 事件触发） -->
-                                <Border Height="84" CornerRadius="6"
+                                <!-- 图标区：懒加载由 GridView.ContainerContentChanging 驱动
+                                    （Image.Loading 触发时 DataContext 尚未继承就位，WinUI 时机竞态） -->
+                                <Border Height="84" CornerRadius="4"
                                         Background="{ThemeResource SubtleFillColorTertiaryBrush}">
-                                    <Image Source="{Binding Icon}" Stretch="Uniform" Margin="6"
-                                           Loading="OnCardImageLoading" />
+                                    <Image Source="{Binding Icon}" Stretch="Uniform" Margin="6" />
                                 </Border>
 
                                 <!-- 名称（最多两行） -->

@@ -32,12 +32,21 @@ namespace SAM.WinUIApp.Views.Controls
         public GameLibraryView()
         {
             this.InitializeComponent();
+
+            // 虚拟化容器实现/复用时驱动图标懒加载：ContainerContentChanging 的
+            // e.Item 直接给出数据项（Image.Loading 触发时 DataContext 尚未就绪）。
+            this.GameGrid.ContainerContentChanging += this.OnGameGridContainerContentChanging;
         }
 
-        /// <summary>虚拟化容器实现时触发图标懒加载（替代 WPF getter 副作用模式）。</summary>
-        private void OnCardImageLoading(FrameworkElement sender, object args)
+        private void OnGameGridContainerContentChanging(
+            Microsoft.UI.Xaml.Controls.ListViewBase sender,
+            ContainerContentChangingEventArgs args)
         {
-            (sender.DataContext as GameItemViewModel)?.BeginLoadIcon();
+            if (args.InRecycleQueue == false &&
+                args.Item is GameItemViewModel item)
+            {
+                item.BeginLoadIcon();
+            }
         }
 
         /// <summary>单击卡片打开游戏详情（Fluent 原生 ItemClick 模式；WinUI GridView 的 DoubleTapped 不触发）。</summary>

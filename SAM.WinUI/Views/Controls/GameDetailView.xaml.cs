@@ -31,12 +31,20 @@ namespace SAM.WinUIApp.Views.Controls
         public GameDetailView()
         {
             this.InitializeComponent();
+
+            // 虚拟化容器实现/复用时驱动成就图标懒加载（同库页模式）。
+            this.AchievementList.ContainerContentChanging += this.OnAchievementContainerChanging;
         }
 
-        /// <summary>虚拟化容器实现时触发成就图标懒加载（状态相关图标）。</summary>
-        private void OnAchievementIconLoading(FrameworkElement sender, object args)
+        private void OnAchievementContainerChanging(
+            Microsoft.UI.Xaml.Controls.ListViewBase sender,
+            ContainerContentChangingEventArgs args)
         {
-            (sender.DataContext as AchievementItemViewModel)?.BeginLoadIcon();
+            if (args.InRecycleQueue == false &&
+                args.Item is AchievementItemViewModel item)
+            {
+                item.BeginLoadIcon();
+            }
         }
     }
 }
