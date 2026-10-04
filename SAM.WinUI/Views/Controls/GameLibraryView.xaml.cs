@@ -40,12 +40,13 @@ namespace SAM.WinUIApp.Views.Controls
             (sender.DataContext as GameItemViewModel)?.BeginLoadIcon();
         }
 
-        private void OnGameGridDoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
+        /// <summary>单击卡片打开游戏详情（Fluent 原生 ItemClick 模式；WinUI GridView 的 DoubleTapped 不触发）。</summary>
+        private void OnGameGridItemClick(object sender, ItemClickEventArgs e)
         {
-            if ((e.OriginalSource as FrameworkElement)?.DataContext is GameItemViewModel item &&
+            if (e.ClickedItem is GameItemViewModel item &&
                 this.DataContext is GameLibraryViewModel viewModel)
             {
-                viewModel.OpenGameCommand.Execute(item);
+                _ = viewModel.OpenGameCommand.ExecuteAsync(item);
             }
         }
 
@@ -55,7 +56,7 @@ namespace SAM.WinUIApp.Views.Controls
                 this.GameGrid.SelectedItem is GameItemViewModel item &&
                 this.DataContext is GameLibraryViewModel viewModel)
             {
-                viewModel.OpenGameCommand.Execute(item);
+                _ = viewModel.OpenGameCommand.ExecuteAsync(item);
                 e.Handled = true;
             }
         }

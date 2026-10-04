@@ -20,7 +20,9 @@
  *    distribution.
  */
 
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using SAM.WinUIApp.ViewModels;
 
 namespace SAM.WinUIApp.Views.Controls
 {
@@ -29,6 +31,12 @@ namespace SAM.WinUIApp.Views.Controls
         public GameDetailView()
         {
             this.InitializeComponent();
+        }
+
+        /// <summary>虚拟化容器实现时触发成就图标懒加载（状态相关图标）。</summary>
+        private void OnAchievementIconLoading(FrameworkElement sender, object args)
+        {
+            (sender.DataContext as AchievementItemViewModel)?.BeginLoadIcon();
         }
     }
 }

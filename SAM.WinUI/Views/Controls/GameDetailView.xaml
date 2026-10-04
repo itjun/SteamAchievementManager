@@ -7,12 +7,294 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <!-- Phase 4 占位：Phase 5 落地 CommandBar/成就卡片/NumberBox/底部操作栏。 -->
-    <Grid Padding="36,24,36,28">
-        <StackPanel Spacing="8">
-            <Button Content="&#xE76B; 返回" Command="{Binding GoBackCommand}" />
-            <TextBlock Text="{Binding GameName}" Style="{StaticResource TitleTextBlockStyle}" />
-            <TextBlock Text="详情页将在 Phase 5 落地。" Style="{StaticResource SubtitleTextBlockStyle}" />
-        </StackPanel>
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Converters/Converters.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <!-- Fluent 2 详情页：页头（返回 + 标题 + CommandBar）、分段切换 成就/统计、
+         成就卡片列表 / 统计 NumberBox 行、底部操作栏（重置/未保存计数/保存）。
+         数据经 SAM.Worker 统计子进程读写。 -->
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- 页头：返回 + 标题 + App ID；右侧刷新与批量操作（CommandBar） -->
+        <Grid Grid.Row="0" Margin="36,20,36,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <Button Grid.Column="0" Command="{Binding GoBackCommand}"
+                    ToolTipService.ToolTip="返回游戏库" VerticalAlignment="Center">
+                <FontIcon Glyph="&#xE76B;" />
+            </Button>
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="12,0,0,0" VerticalAlignment="Center">
+                <TextBlock Text="{Binding GameName}" Style="{StaticResource TitleTextBlockStyle}"
+                           VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="560" />
+                <TextBlock Text="{Binding AppIdText}" Style="{StaticResource CaptionTextBlockStyle}"
+                           Margin="12,8,0,0" VerticalAlignment="Center"
+                           Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+            </StackPanel>
+
+            <!-- 批量操作（仅成就模式可见；靠悬停提示表意，等价旧版图标钮） -->
+            <CommandBar Grid.Column="2" Background="Transparent" VerticalAlignment="Center" IsOpen="False"
+                        Visibility="{Binding ShowAchievements, Converter={StaticResource BoolToVisibilityConverter}}">
+                <AppBarButton Command="{Binding UnlockAllCommand}" Label="全部解锁"
+                              ToolTipService.ToolTip="解锁当前列表中全部成就">
+                    <AppBarButton.Icon>
+                        <FontIcon Glyph="&#xE73E;" />
+                    </AppBarButton.Icon>
+                </AppBarButton>
+                <AppBarButton Command="{Binding LockAllCommand}" Label="全部锁定"
+                              ToolTipService.ToolTip="锁定当前列表中全部成就">
+                    <AppBarButton.Icon>
+                        <FontIcon Glyph="&#xE711;" />
+                    </AppBarButton.Icon>
+                </AppBarButton>
+                <AppBarButton Command="{Binding InvertAllCommand}" Label="反转"
+                              ToolTipService.ToolTip="反转当前列表成就状态">
+                    <AppBarButton.Icon>
+                        <FontIcon Glyph="&#xE8E5;" />
+                    </AppBarButton.Icon>
+                </AppBarButton>
+                <AppBarSeparator />
+                <AppBarButton Command="{Binding RefreshCommand}" Label="刷新"
+                              ToolTipService.ToolTip="重新读取">
+                    <AppBarButton.Icon>
+                        <FontIcon Glyph="&#xE72C;" />
+                    </AppBarButton.Icon>
+                </AppBarButton>
+            </CommandBar>
+
+            <!-- 统计模式：编辑开关 + 刷新 -->
+            <CommandBar Grid.Column="2" Background="Transparent" VerticalAlignment="Center" IsOpen="False"
+                        Visibility="{Binding ShowStatistics, Converter={StaticResource BoolToVisibilityConverter}}">
+                <AppBarToggleButton Label="启用统计编辑" IsChecked="{Binding StatsEditingEnabled, Mode=TwoWay}"
+                                    ToolTipService.ToolTip="谨慎操作：开启后可直接修改统计数值">
+                    <AppBarToggleButton.Icon>
+                        <FontIcon Glyph="&#xE70F;" />
+                    </AppBarToggleButton.Icon>
+                </AppBarToggleButton>
+                <AppBarSeparator />
+                <AppBarButton Command="{Binding RefreshCommand}" Label="刷新" Icon="Refresh"
+                              ToolTipService.ToolTip="重新读取" />
+            </CommandBar>
+        </Grid>
+
+        <!-- 工具行：分段切换 成就/统计 +（成就模式）筛选/搜索/进度 -->
+        <Grid Grid.Row="1" Margin="36,16,36,12" ColumnSpacing="16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Style="{StaticResource SegmentedGroup}" VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal">
+                    <RadioButton Style="{StaticResource SegmentedItem}" Content="成就" GroupName="DetailSection"
+                                 IsChecked="{Binding ShowAchievements, Mode=TwoWay}" MinWidth="76" />
+                    <RadioButton Style="{StaticResource SegmentedItem}" Content="统计" GroupName="DetailSection"
+                                 IsChecked="{Binding ShowStatistics, Mode=TwoWay}" MinWidth="76" />
+                </StackPanel>
+            </Border>
+
+            <!-- 成就筛选 + 搜索 -->
+            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center"
+                        Spacing="12"
+                        Visibility="{Binding ShowAchievements, Converter={StaticResource BoolToVisibilityConverter}}">
+                <Border Style="{StaticResource SegmentedGroup}" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal">
+                        <RadioButton Style="{StaticResource SegmentedItem}" Content="全部" GroupName="AchievementFilter"
+                                     IsChecked="{Binding FilterAll, Mode=TwoWay}" />
+                        <RadioButton Style="{StaticResource SegmentedItem}" Content="已解锁" GroupName="AchievementFilter"
+                                     IsChecked="{Binding FilterUnlocked, Mode=TwoWay}" />
+                        <RadioButton Style="{StaticResource SegmentedItem}" Content="未解锁" GroupName="AchievementFilter"
+                                     IsChecked="{Binding FilterLocked, Mode=TwoWay}" />
+                    </StackPanel>
+                </Border>
+
+                <AutoSuggestBox PlaceholderText="搜索成就..." QueryIcon="Find" Width="220"
+                                Text="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+            </StackPanel>
+
+            <TextBlock Grid.Column="2" VerticalAlignment="Center" Style="{StaticResource CaptionTextBlockStyle}"
+                       Text="{Binding ProgressText}"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                       Visibility="{Binding ShowAchievements, Converter={StaticResource BoolToVisibilityConverter}}" />
+        </Grid>
+
+        <!-- 内容区 -->
+        <Grid Grid.Row="2" Margin="36,0,36,12">
+            <!-- 成就列表 -->
+            <Border Style="{StaticResource SurfaceCard}"
+                    Visibility="{Binding ShowAchievements, Converter={StaticResource BoolToVisibilityConverter}}">
+                <ListView ItemsSource="{Binding Achievements}"
+                          SelectionMode="None"
+                          Background="Transparent" BorderThickness="0" Padding="4"
+                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                          ScrollViewer.HorizontalScrollMode="Disabled">
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <Grid MinHeight="76" Margin="8,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <Border Width="56" Height="56"
+                                        HorizontalAlignment="Left" VerticalAlignment="Center"
+                                        CornerRadius="4"
+                                        Background="{ThemeResource SubtleFillColorTertiaryBrush}">
+                                    <Image Source="{Binding Icon}" Stretch="Uniform" Margin="2"
+                                           Loading="OnAchievementIconLoading" />
+                                </Border>
+
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="14,0,16,0">
+                                    <TextBlock Text="{Binding DisplayName}" Style="{StaticResource BodyStrongTextBlockStyle}"
+                                               TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{Binding DisplayDescription}" Style="{StaticResource CaptionTextBlockStyle}"
+                                               Margin="0,3,0,0" TextTrimming="CharacterEllipsis"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    <TextBlock Text="{Binding UnlockText}" Style="{StaticResource CaptionTextBlockStyle}"
+                                               Margin="0,3,0,0"
+                                               Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Spacing="12">
+                                    <TextBlock Text="{Binding StateText}" Style="{StaticResource CaptionTextBlockStyle}"
+                                               VerticalAlignment="Center"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    <CheckBox IsChecked="{Binding PendingAchieved, Mode=TwoWay}"
+                                              IsEnabled="{Binding CanToggle}"
+                                              ToolTipService.ToolTip="{Binding StateText}" />
+                                </StackPanel>
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </Border>
+
+            <!-- 统计列表 -->
+            <Border Style="{StaticResource SurfaceCard}"
+                    Visibility="{Binding ShowStatistics, Converter={StaticResource BoolToVisibilityConverter}}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <!-- 列头 -->
+                    <Grid Margin="24,14,24,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="300" />
+                            <ColumnDefinition Width="240" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="名称" Style="{StaticResource CaptionTextBlockStyle}" FontWeight="SemiBold"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        <TextBlock Grid.Column="1" Text="值" Style="{StaticResource CaptionTextBlockStyle}" FontWeight="SemiBold"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        <TextBlock Grid.Column="2" Text="附加" Style="{StaticResource CaptionTextBlockStyle}" FontWeight="SemiBold"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    </Grid>
+
+                    <ListView Grid.Row="1" ItemsSource="{Binding Statistics}"
+                              SelectionMode="None"
+                              Background="Transparent" BorderThickness="0" Padding="4,0,4,4"
+                              ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                              ScrollViewer.HorizontalScrollMode="Disabled">
+                        <ListView.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="20,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="300" />
+                                        <ColumnDefinition Width="240" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+
+                                    <TextBlock Text="{Binding DisplayName}" VerticalAlignment="Center"
+                                               TextTrimming="CharacterEllipsis"
+                                               ToolTipService.ToolTip="{Binding Id}" />
+
+                                    <NumberBox Grid.Column="1" Width="220" HorizontalAlignment="Left"
+                                               Text="{Binding EditValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                               IsEnabled="{Binding IsEditable}"
+                                               SpinButtonPlacementMode="Compact"
+                                               AcceptsExpression="False" />
+
+                                    <TextBlock Grid.Column="2" Text="{Binding Extra}" Style="{StaticResource CaptionTextBlockStyle}"
+                                               VerticalAlignment="Center"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                               TextTrimming="CharacterEllipsis" />
+
+                                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding ErrorText}"
+                                               Style="{StaticResource CaptionTextBlockStyle}"
+                                               Margin="2,2,8,0"
+                                               Foreground="{ThemeResource SystemFillColorCautionBrush}" />
+                                </Grid>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </Grid>
+            </Border>
+
+            <!-- 加载中 -->
+            <ProgressRing IsIndeterminate="True" Width="36" Height="36"
+                          HorizontalAlignment="Center" VerticalAlignment="Center"
+                          Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibilityConverter}}" />
+        </Grid>
+
+        <!-- 底部 Action Bar：层填充 + 发丝线分层 -->
+        <Border Grid.Row="3" Height="60"
+                Background="{ThemeResource LayerFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
+                BorderThickness="0,1,0,0">
+            <Grid Margin="36,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <Button Grid.Column="0" Command="{Binding ResetAllCommand}"
+                        VerticalAlignment="Center"
+                        ToolTipService.ToolTip="重置该游戏的统计（可选连同成就）">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE81C;" />
+                        <TextBlock Text="重置" />
+                    </StackPanel>
+                </Button>
+
+                <TextBlock Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center"
+                           Style="{StaticResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           Text="{Binding ChangesText}" />
+
+                <Button Grid.Column="2" Command="{Binding SaveCommand}"
+                        Style="{StaticResource AccentButtonStyle}"
+                        MinWidth="120" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE74E;" />
+                        <TextBlock Text="保存更改" />
+                    </StackPanel>
+                </Button>
+            </Grid>
+        </Border>
     </Grid>
 </UserControl>

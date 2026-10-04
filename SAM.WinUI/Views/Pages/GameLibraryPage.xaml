@@ -6,24 +6,13 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:controls="using:SAM.WinUIApp.Views.Controls"
-    xmlns:views="using:SAM.WinUIApp.Views"
     mc:Ignorable="d">
 
-    <!-- 库 ↔ 详情 统一内容区（MainViewModel.CurrentView + 模板选择器；WinUI 无隐式 DataTemplate） -->
-    <Page.Resources>
-        <DataTemplate x:Key="LibraryTemplate">
-            <controls:GameLibraryView />
-        </DataTemplate>
-        <DataTemplate x:Key="DetailTemplate">
-            <controls:GameDetailView />
-        </DataTemplate>
-        <views:ViewTemplateSelector x:Key="ViewSelector"
-                                    LibraryTemplate="{StaticResource LibraryTemplate}"
-                                    DetailTemplate="{StaticResource DetailTemplate}" />
-    </Page.Resources>
-
-    <ContentControl Content="{Binding CurrentView}"
-                    ContentTemplateSelector="{StaticResource ViewSelector}"
-                    HorizontalContentAlignment="Stretch"
-                    VerticalContentAlignment="Stretch" />
+    <!-- 库 ↔ 详情 统一内容区：两个子视图直挂 + Visibility 切换。
+         不用 ContentControl+DataTemplateSelector——模板实例化的 UserControl
+         不建 UIA 自动化对等项（实测内容区整棵 UIA 树缺失），键盘/自动化不可达。 -->
+    <Grid>
+        <controls:GameLibraryView x:Name="LibraryView" />
+        <controls:GameDetailView x:Name="DetailView" Visibility="Collapsed" />
+    </Grid>
 </Page>

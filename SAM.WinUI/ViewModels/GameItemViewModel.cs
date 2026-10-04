@@ -53,6 +53,9 @@ namespace SAM.WinUIApp.ViewModels
 
         public GameInfo Game { get; }
 
+        /// <summary>UIA 名称（卡片对等项的 Name 来自 ToString）。</summary>
+        public override string ToString() => this.Name;
+
         public uint Id => this.Game.Id;
 
         /// <summary>卡片图标（懒加载，视图容器实现时触发）。</summary>

@@ -114,6 +114,24 @@ namespace SAM.WinUIApp
             this._MainViewModel.Library = library;
             this._MainViewModel.CurrentView = library;
             mainWindow.AttachLibrary(library);
+
+            // --open-game=<appId>：启动后直接进入该游戏的详情页（命令行直达，也便于自动化验证）。
+            foreach (var arg in Environment.GetCommandLineArgs())
+            {
+                if (arg.StartsWith("--open-game=", StringComparison.OrdinalIgnoreCase) == true &&
+                    uint.TryParse(arg.Substring(12), System.Globalization.NumberStyles.Integer,
+                        System.Globalization.CultureInfo.InvariantCulture, out var openAppId) == true)
+                {
+                    var gameName = this._SteamService.GetAppData(openAppId, "name");
+                    this._MainViewModel.CurrentView = new ViewModels.GameDetailViewModel(
+                        openAppId,
+                        gameName ?? "App " + openAppId.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                        this._GameService,
+                        this._MainViewModel,
+                        this._DialogService);
+                    break;
+                }
+            }
         }
 
         private void OnUnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)

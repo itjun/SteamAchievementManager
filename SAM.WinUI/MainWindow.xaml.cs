@@ -20,6 +20,7 @@
  *    distribution.
  */
 
+using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
@@ -51,6 +52,37 @@ namespace SAM.WinUIApp
 
             // 初始页：游戏库。
             this.ContentFrame.Navigate(typeof(GameLibraryPage), mainViewModel);
+
+            // 未保存更改时拦截窗口关闭（AppWindow.Closing deferral + 异步确认）。
+            this.AppWindow.Closing += this.OnAppWindowClosing;
+        }
+
+        private bool _SkipCloseInterception;
+
+        /// <summary>
+        /// 未保存更改时拦截窗口关闭：AppWindowClosingEventArgs 无 deferral，
+        /// 用"先 Cancel 再异步确认、确认后置跳过标志二次关闭"的标准模式。
+        /// </summary>
+        private async void OnAppWindowClosing(AppWindow sender, AppWindowClosingEventArgs args)
+        {
+            if (this._SkipCloseInterception == true)
+            {
+                return;
+            }
+
+            if (this._MainViewModel.CurrentView is not GameDetailViewModel detail || detail.HasChanges == false)
+            {
+                return;
+            }
+
+            args.Cancel = true;
+
+            if (await detail.ConfirmLeaveAsync() == true)
+            {
+                detail.Dispose();
+                this._SkipCloseInterception = true;
+                this.Close();
+            }
         }
 
         /// <summary>接入游戏库：侧栏类型分类菜单（InfoBadge 计数）随库数据重建。</summary>

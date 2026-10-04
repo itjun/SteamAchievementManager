@@ -445,9 +445,9 @@ namespace SAM.WinUIApp.ViewModels
             }
         }
 
-        /// <summary>双击/回车打开游戏 → 进入游戏详情。</summary>
+        /// <summary>双击/回车打开游戏 → 进入游戏详情（未保存更改确认走异步对话框）。</summary>
         [RelayCommand]
-        private void OpenGame(GameItemViewModel? item)
+        private async Task OpenGameAsync(GameItemViewModel? item)
         {
             if (item == null)
             {
@@ -456,7 +456,7 @@ namespace SAM.WinUIApp.ViewModels
 
             if (this._Main.CurrentView is GameDetailViewModel existing)
             {
-                if (existing.TryConfirmLeave() == false)
+                if (await existing.ConfirmLeaveAsync() == false)
                 {
                     return;
                 }
@@ -464,7 +464,7 @@ namespace SAM.WinUIApp.ViewModels
                 existing.Dispose();
             }
 
-            this._Main.CurrentView = new GameDetailViewModel(item.Id, item.Name, this._GameService, this._Main);
+            this._Main.CurrentView = new GameDetailViewModel(item.Id, item.Name, this._GameService, this._Main, this._Dialogs);
             this._Main.StatusText = $"已打开 {item.Name}（App ID {item.Id}）";
         }
 
