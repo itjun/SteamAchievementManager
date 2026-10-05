@@ -175,9 +175,11 @@ namespace SAM.WinUIApp.Services
 
                 if (Environment.OSVersion.Version.Build >= 22000)
                 {
-                    // Mica：保持透明，材质贯通标题栏。
-                    titleBar.ButtonBackgroundColor = null;
-                    titleBar.ButtonInactiveBackgroundColor = null;
+                    // Mica：显式透明让云母材质贯通按钮区（null 会回落到系统默认的
+                    // 不透明标题栏底色，与窗口材质形成一条色带）。
+                    var transparent = Windows.UI.Color.FromArgb(0, 0, 0, 0);
+                    titleBar.ButtonBackgroundColor = transparent;
+                    titleBar.ButtonInactiveBackgroundColor = transparent;
                 }
                 else
                 {
