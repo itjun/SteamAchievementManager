@@ -7,20 +7,27 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
+                <ResourceDictionary Source="/Converters/Converters.xaml" />
             </ResourceDictionary.MergedDictionaries>
 
-            <!-- 家庭共享状态章配色：ThemeDictionaries 随主题自动切换
-                 （文本对比度按 WCAG 校准，浅 #9A5B14≈4.7:1 / 深 #E8A33D≈4.6:1） -->
+            <!-- 家庭共享状态章配色 + 分段选中段配色：ThemeDictionaries 随主题自动切换
+                 （文本对比度按 WCAG 校准，浅 #9A5B14≈4.7:1 / 深 #E8A33D≈4.6:1；
+                 分段选中用自定义 accent 画刷——系统 AccentFillColorDefaultBrush 在
+                 VSM Setter 里解析失败会静默回落，自定义 key 与本机制实测可靠） -->
             <ResourceDictionary.ThemeDictionaries>
                 <ResourceDictionary x:Key="Light">
                     <SolidColorBrush x:Key="FamilySharedTextBrush" Color="#FF9A5B14" />
                     <SolidColorBrush x:Key="FamilySharedBackgroundBrush" Color="#1FE8A33D" />
                     <SolidColorBrush x:Key="FamilySharedBorderBrush" Color="#33E8A33D" />
+                    <SolidColorBrush x:Key="SegmentSelectedBackgroundBrush" Color="#FF0078D4" />
+                    <SolidColorBrush x:Key="SegmentSelectedTextBrush" Color="#FFFFFFFF" />
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Dark">
                     <SolidColorBrush x:Key="FamilySharedTextBrush" Color="#FFE8A33D" />
                     <SolidColorBrush x:Key="FamilySharedBackgroundBrush" Color="#2EE8A33D" />
                     <SolidColorBrush x:Key="FamilySharedBorderBrush" Color="#3DE8A33D" />
+                    <SolidColorBrush x:Key="SegmentSelectedBackgroundBrush" Color="#FF4C9BE8" />
+                    <SolidColorBrush x:Key="SegmentSelectedTextBrush" Color="#FF000000" />
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
 
@@ -36,8 +43,10 @@
                 <Setter Property="Padding" Value="2" />
             </Style>
 
-            <!-- 分段控件选项：选中=卡片填充+描边+主文字色，悬停=Subtle 填充
-                 （WASDK 2.x 无原生 Segmented 控件，沿用分段 RadioButton 方案） -->
+            <!-- 分段控件选项：选中=accent 叠加层（高亮），悬停=Subtle 填充
+                 （实现约束：VSM Setter 内的 ThemeResource 引用在本应用静默失效——
+                 系统与自定义 key 均如此（像素级实测）；选中配色因此走属性级
+                 ThemeResource + VSM 仅切换字面量 Visibility，两条路径均实测可靠） -->
             <Style x:Key="SegmentedItem" TargetType="RadioButton">
                 <Setter Property="FontSize" Value="12" />
                 <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
@@ -47,16 +56,33 @@
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="RadioButton">
-                            <Border x:Name="Root"
-                                    Background="{TemplateBinding Background}"
-                                    BorderBrush="Transparent"
-                                    BorderThickness="1"
-                                    CornerRadius="4"
-                                    Padding="{TemplateBinding Padding}">
-                                <ContentPresenter x:Name="Content"
-                                                  HorizontalAlignment="Center"
-                                                  VerticalAlignment="Center"
-                                                  Foreground="{TemplateBinding Foreground}" />
+                            <Grid>
+                                <Border x:Name="Root"
+                                        Background="{TemplateBinding Background}"
+                                        BorderBrush="Transparent"
+                                        BorderThickness="1"
+                                        CornerRadius="4"
+                                        Padding="{TemplateBinding Padding}">
+                                    <ContentPresenter x:Name="Content"
+                                                      HorizontalAlignment="Center"
+                                                      VerticalAlignment="Center"
+                                                      Foreground="{TemplateBinding Foreground}" />
+                                </Border>
+
+                                <!-- 选中叠加层：accent 填充 + OnAccent 文字（盖在常规层之上）。
+                                     Visibility 直绑 TemplatedParent.IsChecked（纯绑定，不经 VSM）：
+                                     本模板实测 CheckStates 的 VisualState Setter 一律不渲染
+                                     （ThemeResource 与字面量均不生效），绑定+转换器为可靠路径。 -->
+                                <Border x:Name="CheckedOverlay"
+                                        Background="{ThemeResource SegmentSelectedBackgroundBrush}"
+                                        CornerRadius="4"
+                                        Padding="{TemplateBinding Padding}"
+                                        Visibility="{Binding IsChecked, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource BoolToVisibilityConverter}, FallbackValue=Collapsed, TargetNullValue=Collapsed}">
+                                    <ContentPresenter HorizontalAlignment="Center"
+                                                      VerticalAlignment="Center"
+                                                      Foreground="{ThemeResource SegmentSelectedTextBrush}" />
+                                </Border>
+
                                 <VisualStateManager.VisualStateGroups>
                                     <VisualStateGroup x:Name="CommonStates">
                                         <VisualState x:Name="Normal" />
@@ -72,19 +98,19 @@
                                         </VisualState>
                                     </VisualStateGroup>
                                     <VisualStateGroup x:Name="CheckStates">
-                                        <VisualState x:Name="Unchecked" />
-                                        <!-- 选中段 = accent 填充 + OnAccent 文字（与 ToggleButton 选中语言一致；
-                                             原"卡片填充+描边"在深色下与分段壳对比不足，几乎不可辨） -->
+                                        <VisualState x:Name="Unchecked">
+                                            <VisualState.Setters>
+                                                <Setter Target="CheckedOverlay.Visibility" Value="Collapsed" />
+                                            </VisualState.Setters>
+                                        </VisualState>
                                         <VisualState x:Name="Checked">
                                             <VisualState.Setters>
-                                                <Setter Target="Root.Background" Value="{ThemeResource AccentFillColorDefaultBrush}" />
-                                                <Setter Target="Root.BorderBrush" Value="{ThemeResource AccentFillColorDefaultBrush}" />
-                                                <Setter Target="Content.Foreground" Value="{ThemeResource TextOnAccentFillColorPrimaryBrush}" />
+                                                <Setter Target="CheckedOverlay.Visibility" Value="Visible" />
                                             </VisualState.Setters>
                                         </VisualState>
                                     </VisualStateGroup>
                                 </VisualStateManager.VisualStateGroups>
-                            </Border>
+                            </Grid>
                         </ControlTemplate>
                     </Setter.Value>
                 </Setter>
