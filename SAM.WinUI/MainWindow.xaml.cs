@@ -59,6 +59,12 @@ namespace SAM.WinUIApp
             // 初始页：游戏库。
             this.ContentFrame.Navigate(typeof(GameLibraryPage), mainViewModel);
 
+            // 侧栏为常开设计（无汉堡/关闭入口）：拦截一切收起请求——实测用户拖拽
+            // 缩放到极窄尺寸时 NavigationView 可能内部自动收起窗格且不随拉宽恢复
+            //（头部 logo、菜单项全部消失，内容左移贴边）。
+            this.NavView.PaneClosing += (_, e) => e.Cancel = true;
+            this.NavView.PaneClosed += (_, _) => this.NavView.IsPaneOpen = true;
+
             // 未保存更改时拦截窗口关闭（AppWindow.Closing deferral + 异步确认）。
             this.AppWindow.Closing += this.OnAppWindowClosing;
         }
