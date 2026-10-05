@@ -71,7 +71,8 @@ namespace SAM.WinUIApp.Views.Pages
 
         private void OnMainPropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(MainViewModel.CurrentView))
+            if (e.PropertyName == nameof(MainViewModel.CurrentView) ||
+                e.PropertyName == nameof(MainViewModel.SteamUnavailable))
             {
                 this.ShowCurrent(this._Main?.CurrentView);
             }
@@ -79,23 +80,44 @@ namespace SAM.WinUIApp.Views.Pages
 
         private void ShowCurrent(ViewModelBase? viewModel)
         {
-            var detail = viewModel is GameDetailViewModel;
-            var active = detail ? (FrameworkElement)this.DetailView : this.LibraryView;
-            var inactive = detail ? (FrameworkElement)this.LibraryView : this.DetailView;
-
-            if (active.DataContext != viewModel)
+            // Steam 不可用且无内容视图：占位提示页（应用不因 Steam 缺失退出）。
+            FrameworkElement active;
+            object? context;
+            if (viewModel == null && this._Main?.SteamUnavailable == true)
             {
-                active.DataContext = viewModel;
+                active = this.SteamUnavailableView;
+                context = this._Main;
+            }
+            else if (viewModel is GameDetailViewModel)
+            {
+                active = this.DetailView;
+                context = viewModel;
+            }
+            else
+            {
+                active = this.LibraryView;
+                context = viewModel;
             }
 
-            var switchTarget = active.Visibility == Visibility.Collapsed;
-            if (switchTarget == true)
+            foreach (var view in new FrameworkElement[] { this.LibraryView, this.DetailView, this.SteamUnavailableView })
+            {
+                if (ReferenceEquals(view, active) == false)
+                {
+                    view.Visibility = Visibility.Collapsed;
+                }
+            }
+
+            if (active.DataContext != context)
+            {
+                active.DataContext = context;
+            }
+
+            if (active.Visibility == Visibility.Collapsed)
             {
                 this.PlayEntrance(active);
             }
 
             active.Visibility = Visibility.Visible;
-            inactive.Visibility = Visibility.Collapsed;
         }
 
         /// <summary>Fluent 入场动效：淡入 + 24px 上移（约 250ms，标准缓动）。

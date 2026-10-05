@@ -87,21 +87,38 @@ namespace SAM.WinUIApp
             // 强制更新（与错误对话框的冲突由 ShowWithRetryAsync 兜底）。
             _ = this.RunStartupUpdateCheckAsync();
 
-            // 初始化 Steam（Picker 模式 appId=0）。
+            // 初始化 Steam（Picker 模式 appId=0）；失败不弹框、不退出——应用照常
+            // 启动，页面内提示原因（未安装/未运行等），安装并登录后可点"重试"。
             this._SteamService = new SteamService();
+            this._MainViewModel.SteamRetryRequested += () => this.InitializeSteam(mainWindow);
+            this.InitializeSteam(mainWindow);
+        }
+
+        /// <summary>
+        /// Steam 初始化 + 游戏库组装（启动与页面"重试"共用）。重复调用安全：
+        /// SteamService.Initialize 幂等，回调泵只创建一次。
+        /// </summary>
+        private void InitializeSteam(MainWindow mainWindow)
+        {
             var initResult = this._SteamService.Initialize(0);
             if (initResult.Success == false)
             {
-                _ = this._DialogService.ShowErrorAsync("Steam 成就管理器", DescribeInitFailure(initResult));
+                var (title, detail) = DescribeInitFailure(initResult);
+                this._MainViewModel.MarkSteamUnavailable(title, detail);
                 return;
             }
 
+            this._MainViewModel.ClearSteamUnavailable();
+
             // Steam 回调泵：等价 WPF 版 100ms DispatcherTimer。
-            var timer = mainWindow.DispatcherQueue.CreateTimer();
-            timer.Interval = TimeSpan.FromMilliseconds(100);
-            timer.Tick += (_, _) => this._SteamService.RunCallbacks();
-            timer.Start();
-            this._CallbackTimer = timer;
+            if (this._CallbackTimer == null)
+            {
+                var timer = mainWindow.DispatcherQueue.CreateTimer();
+                timer.Interval = TimeSpan.FromMilliseconds(100);
+                timer.Tick += (_, _) => this._SteamService.RunCallbacks();
+                timer.Start();
+                this._CallbackTimer = timer;
+            }
 
             this._GameService = new GameService(this._SteamService);
 
@@ -223,18 +240,24 @@ namespace SAM.WinUIApp
             this.PrepareForUpdateExit();
         }
 
-        internal static string DescribeInitFailure(SteamInitResult result) => result.Failure switch
+        /// <summary>初始化失败 → 页面内提示的标题与详情（区分未安装/未运行等场景）。</summary>
+        internal static (string Title, string Detail) DescribeInitFailure(SteamInitResult result) => result.Failure switch
         {
-            SteamInitFailure.RunningFromSteamDirectory => "不能从 Steam 安装目录内运行本程序。",
-            SteamInitFailure.GetInstallPath => "未能获取 Steam 安装路径，请确认本机已安装 Steam。",
+            SteamInitFailure.RunningFromSteamDirectory =>
+                ("不能从 Steam 目录内运行", "本程序位于 Steam 安装目录内，请移动到其他位置后重试。"),
+            SteamInitFailure.GetInstallPath =>
+                ("未检测到 Steam", "本机尚未安装 Steam（找不到 Steam 安装信息）。\n请安装 Steam 并登录账号后，点击“重试”。"),
             SteamInitFailure.Load or SteamInitFailure.DllNotFound =>
-                "加载 steamclient 失败，请确认 Steam 已正确安装。",
-            SteamInitFailure.CreateSteamClient => "初始化 Steam 接口失败（SteamClient018）。",
-            SteamInitFailure.CreateSteamPipe => "创建 Steam 管道失败。",
+                ("未检测到 Steam", "Steam 安装不完整，无法加载 steamclient64.dll。\n请重新安装 Steam 后，点击“重试”。"),
+            SteamInitFailure.CreateSteamClient =>
+                ("初始化 Steam 接口失败", "创建 SteamClient018 失败，请尝试重启 Steam 后点击“重试”。"),
+            SteamInitFailure.CreateSteamPipe =>
+                ("创建 Steam 管道失败", "请确认 Steam 正在运行，然后点击“重试”。"),
             SteamInitFailure.ConnectToGlobalUser =>
-                "无法连接 Steam 用户，请确认 Steam 正在运行且已登录。\n（使用家庭共享时也可能出现此错误）",
-            SteamInitFailure.AppIdMismatch => "App ID 与当前 Steam 会话不匹配。",
-            _ => $"初始化 Steam 时发生未知错误。\n{result.Detail}",
+                ("无法连接 Steam 用户", "请确认 Steam 正在运行且已登录。\n（使用家庭共享时也可能出现此错误）\n就绪后点击“重试”。"),
+            SteamInitFailure.AppIdMismatch =>
+                ("App ID 不匹配", "App ID 与当前 Steam 会话不匹配，请重启 Steam 后重试。"),
+            _ => ("初始化 Steam 失败", $"发生未知错误。\n{result.Detail}"),
         };
     }
 }

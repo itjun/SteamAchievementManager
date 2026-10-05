@@ -14,5 +14,6 @@
     <Grid>
         <controls:GameLibraryView x:Name="LibraryView" />
         <controls:GameDetailView x:Name="DetailView" Visibility="Collapsed" />
+        <controls:SteamUnavailableView x:Name="SteamUnavailableView" Visibility="Collapsed" />
     </Grid>
 </Page>
