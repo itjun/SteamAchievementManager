@@ -147,8 +147,11 @@ namespace SAM.WinUIApp.Services
 
         /// <summary>
         /// 标题栏按钮配色（ExtendsContentIntoTitleBar 后系统不跟随应用主题）。
-        /// Win11 Mica 下保持透明让材质贯通；其余平台给按钮背景填主题底色，
-        /// 否则系统按默认浅色画非客户区（深色模式下出现白色按钮条）。
+        /// 按钮背景必须对齐"通栏"实际显色——通栏是 NavigationView 内容层
+        /// （LayerFillColorDefault 半透明白）叠在底色/材质上，而非纯底色：
+        /// Win11 Mica 下给按钮填同款半透明层色（与通栏同样叠在云母上，含壁纸染色完全同色）；
+        /// 其余平台直接填合成后的实色（像素实测：浅 #F3F3F3⊕50%白=#F9F9F9、
+        /// 深 #202020⊕3%白=#272727），否则按钮条比通栏深一档形成竖直色带。
         /// </summary>
         private void UpdateCaptionButtons()
         {
@@ -175,20 +178,24 @@ namespace SAM.WinUIApp.Services
 
                 if (Environment.OSVersion.Version.Build >= 22000)
                 {
-                    // Mica：显式透明让云母材质贯通按钮区（null 会回落到系统默认的
-                    // 不透明标题栏底色，与窗口材质形成一条色带）。
-                    var transparent = Windows.UI.Color.FromArgb(0, 0, 0, 0);
-                    titleBar.ButtonBackgroundColor = transparent;
-                    titleBar.ButtonInactiveBackgroundColor = transparent;
+                    // Mica：LayerFillColorDefault 同款半透明层（浅 50%白 / 深 3%白），
+                    // 叠在云母上与通栏（云母+内容层）完全同色；alpha=0 的纯透明
+                    // 反而比通栏少一层，会露出一条未提亮的按钮条。
+                    var layer = dark
+                        ? Windows.UI.Color.FromArgb(0x08, 0xFF, 0xFF, 0xFF)
+                        : Windows.UI.Color.FromArgb(0x80, 0xFF, 0xFF, 0xFF);
+                    titleBar.ButtonBackgroundColor = layer;
+                    titleBar.ButtonInactiveBackgroundColor = layer;
                 }
                 else
                 {
-                    // 主题底色（SolidBackgroundFillColorBase：深 #202020 / 浅 #F3F3F3）。
-                    var baseColor = dark
-                        ? Windows.UI.Color.FromArgb(255, 0x20, 0x20, 0x20)
-                        : Windows.UI.Color.FromArgb(255, 0xF3, 0xF3, 0xF3);
-                    titleBar.ButtonBackgroundColor = baseColor;
-                    titleBar.ButtonInactiveBackgroundColor = baseColor;
+                    // 无材质平台的通栏合成实色（SolidBackgroundFillColorBase 叠
+                    // LayerFillColorDefault 后的实测结果）。
+                    var layerColor = dark
+                        ? Windows.UI.Color.FromArgb(255, 0x27, 0x27, 0x27)
+                        : Windows.UI.Color.FromArgb(255, 0xF9, 0xF9, 0xF9);
+                    titleBar.ButtonBackgroundColor = layerColor;
+                    titleBar.ButtonInactiveBackgroundColor = layerColor;
                 }
             }
             catch
